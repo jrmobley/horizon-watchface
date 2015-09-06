@@ -4,3 +4,4 @@ build
 
 # Ignore waf lock file
 .lock-waf*
+.idea
