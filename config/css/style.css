@@ -1,0 +1,17 @@
+.preview svg {
+    display: block;
+    width: 120px;
+    height: 120px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 1ex;
+    padding-bottom: 1ex;
+}
+.preview svg text {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+}

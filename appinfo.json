@@ -6,7 +6,7 @@
   "versionCode": 1,
   "versionLabel": "1.0",
   "sdkVersion": "3",
-  "targetPlatforms": ["basalt"],
+  "targetPlatforms": ["basalt", "chalk"],
   "capabilities": ["configurable", "location"],
   "watchapp": {"watchface": true},
   "appKeys": {
@@ -25,9 +25,9 @@
   "resources": {
     "media": [
         {
-            "name": "DIN_FFONT",
+            "name": "DIGITS_FFONT",
             "type": "raw",
-            "file": "DINdigits.ffont"
+            "file": "din-digits-amp.ffont"
         }
     ]
   }

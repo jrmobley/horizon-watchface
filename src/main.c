@@ -11,8 +11,33 @@
 // globals
 // --------------------------------------------------------------------------
 
+#ifdef PBL_ROUND
+
+#define TIME_TEXT_SIZE 36
+#define DATE_FONT_KEY  FONT_KEY_GOTHIC_18_BOLD
+#define ORBIT_RADIUS   INT_TO_FIXED(75)
+#define SOLAR_RADIUS   INT_TO_FIXED(10)
+#define SOLAR_STROKE   INT_TO_FIXED(2)
+#define PIP_RADIUS     (SOLAR_RADIUS / 4)
+#define READOUT_RADIUS INT_TO_FIXED(62)
+#define READOUT_STROKE INT_TO_FIXED(2)
+
+
+#else
+
+#define TIME_TEXT_SIZE 32
+#define DATE_FONT_KEY  FONT_KEY_GOTHIC_18
+#define ORBIT_RADIUS   INT_TO_FIXED(61)
+#define SOLAR_RADIUS   INT_TO_FIXED(8)
+#define SOLAR_STROKE   INT_TO_FIXED(2)
+#define PIP_RADIUS     (SOLAR_RADIUS / 4)
+#define READOUT_RADIUS INT_TO_FIXED(51)
+#define READOUT_STROKE INT_TO_FIXED(2)
+
+#endif
+
 /* keep these in sync with appinfo.json */
-typedef enum AppMessageKeys {
+typedef enum AppKeys {
 	AppKeyLocation = 100,
 	AppKeyLongitude,
 	AppKeyLatitude,
@@ -24,15 +49,29 @@ typedef enum AppMessageKeys {
 	AppKeySunStatus,
 	AppKeyBluetoothAlert,
 	AppKeyColorPalette,
+} AppKeys;
 
-    COLOR_CANVAS = 0,
-    COLOR_BELOW = 1,
-    COLOR_ABOVE = 2,
-    COLOR_MARKS = 3,
-    COLOR_SOLAR = 4,
-    PALETTE_SIZE = 5,
+enum Palette {
+    COLOR_BEHIND,
+    COLOR_BELOW,
+    COLOR_ABOVE,
+    COLOR_WITHIN,
+    COLOR_MARKS,
+    COLOR_TEXT,
+    COLOR_SOLAR,
+    PALETTE_SIZE,
+};
 
-} AppMessageKeys;
+static const uint8_t DEFAULT_PALETTE[PALETTE_SIZE] = {
+    //AARRGGBB
+    0b11111111,
+    0b11011011,
+    0b11111101,
+    0b11111111,
+    0b11000000,
+    0b11000000,
+    0b01111111,
+};
 
 typedef struct LocationFix {
     int32_t timestamp;
@@ -49,25 +88,18 @@ struct Clock {
 
 	// configuration
 	uint8_t bluetoothAlert;
-    uint8_t colorPalette[PALETTE_SIZE];
-	GColor colorBelow;
-	GColor colorAbove;
-	GColor orbitColor;
-	GColor solarColor;
-	fixed_t outerLimit;
-	fixed_t orbitRadius;
-	fixed_t solarRadius;
-	fixed_t solarStroke;
+    GColor colors[PALETTE_SIZE];
 
 	// external state
 	struct tm gregorian;
 	LocationFix location;
 
 	// computed state
-	FPoint center;
+	FSize size;
 	FPoint origin;
 	fixed_t horizon;
 	int32_t kilter;
+    char strbuf[32];
 
 	Window* window;
 	Layer* layer;
@@ -76,8 +108,8 @@ struct Clock {
 } g;
 
 void location_service_init();
-static void applyPalette();
-void initClock();
+static void applyPalette(const uint8_t* palette, int16_t length);
+void initClock(GRect bounds);
 void configureClock();
 void drawClock(Layer* layer, GContext* ctx);
 static void timeChanged(struct tm* tickTime, TimeUnits unitsChanged);
@@ -88,21 +120,23 @@ static void timeChanged(struct tm* tickTime, TimeUnits unitsChanged);
 
 static void init() {
 
+    if (persist_exists(AppKeyColorPalette)) {
+        uint8_t palette[PALETTE_SIZE];
+        int length = persist_read_data(AppKeyColorPalette, palette, PALETTE_SIZE);
+        applyPalette(palette, length);
+    } else {
+        applyPalette(DEFAULT_PALETTE, PALETTE_SIZE);
+    }
+
 	g.bluetoothAlert = 1;
-	g.colorPalette[COLOR_CANVAS] = 0xc0;
-	g.colorPalette[COLOR_BELOW]  = 0x00;
-	g.colorPalette[COLOR_ABOVE]  = 0x00;
-	g.colorPalette[COLOR_MARKS]  = 0xff;
-	g.colorPalette[COLOR_SOLAR]  = 0xff;
 
     setlocale(LC_ALL, "");
 
-    g.font = ffont_create_from_resource(RESOURCE_ID_DIN_FFONT);
+    g.font = ffont_create_from_resource(RESOURCE_ID_DIGITS_FFONT);
     if (g.font) {
     	ffont_debug_log(g.font);
     }
     location_service_init();
-    initClock();
 
     g.window = window_create();
     window_set_background_color(g.window, GColorBlack);
@@ -113,6 +147,7 @@ static void init() {
     g.layer = layer_create(windowFrame);
     layer_set_update_proc(g.layer, &drawClock);
     layer_add_child(windowLayer, g.layer);
+	initClock(windowFrame);
 
     tick_timer_service_subscribe(MINUTE_UNIT | DAY_UNIT, &timeChanged);
 }
@@ -155,11 +190,10 @@ static inline GColor colorFromConfig(uint8_t cc) {
 #endif
 }
 
-static void applyPalette() {
-	g.colorBelow = colorFromConfig(g.colorPalette[COLOR_BELOW]);
-	g.colorAbove = colorFromConfig(g.colorPalette[COLOR_ABOVE]);
-	g.orbitColor = colorFromConfig(g.colorPalette[COLOR_MARKS]);;
-	g.solarColor = colorFromConfig(g.colorPalette[COLOR_SOLAR]);;
+static void applyPalette(const uint8_t* palette, int16_t length) {
+    for (int k = 0; k < length; ++k) {
+        g.colors[k] = colorFromConfig(palette[k]);
+    }
 }
 
 static void timeChanged(struct tm* gregorian, TimeUnits unitsChanged) {
@@ -173,28 +207,19 @@ static void timeChanged(struct tm* gregorian, TimeUnits unitsChanged) {
     }
 }
 
-void initClock() {
+void initClock(GRect bounds) {
 
 	struct Clock* clock = &g;
-
-	// configuration
-	clock->colorBelow = COLOR_FALLBACK(GColorPictonBlue, GColorBlack);
-	clock->colorAbove = COLOR_FALLBACK(GColorIcterine, GColorBlack);
-	clock->orbitColor = COLOR_FALLBACK(GColorBlack, GColorWhite);
-	clock->solarColor = COLOR_FALLBACK(GColorWhite, GColorWhite);
-	applyPalette();
-	clock->outerLimit = INT_TO_FIXED(71);
-	clock->solarRadius = INT_TO_FIXED(8);
-	clock->solarStroke = INT_TO_FIXED(2);
-	clock->orbitRadius = clock->outerLimit - clock->solarRadius;
 
 	// external state
 	time_t now = time(NULL);
 	clock->gregorian = *localtime(&now);
 
 	// computed state
-	clock->center = FPointI(144 / 2, 168 / 2);
-	clock->origin = clock->center;
+	clock->size.w = INT_TO_FIXED(bounds.size.w);
+	clock->size.h = INT_TO_FIXED(bounds.size.h);
+	clock->origin.x = clock->size.w / 2;
+	clock->origin.y = clock->size.h / 2;
 	clock->kilter = 0;
 
 	configureClock();
@@ -225,9 +250,8 @@ void configureClock() {
 	struct Clock* clock = &g;
 
 	if (0 == clock->location.timestamp) {
-		clock->origin = clock->center;
 		clock->kilter = 0;
-		clock->horizon = INT_TO_FIXED(168);
+		clock->horizon = clock->size.h;
 		return;
 	}
 
@@ -236,33 +260,14 @@ void configureClock() {
 	int32_t sunRise = clock->location.sunrise + timezone;
 	int32_t sunSet = clock->location.sunset + timezone;
 	int32_t sunSouth = clock->location.sunsouth + timezone;
+
 	int32_t sunriseAngle = minuteAngle(sunRise);
 	int32_t sunsetAngle = minuteAngle(sunSet);
+    FPoint sunrisePoint = clockPoint(ORBIT_RADIUS, sunriseAngle);
+	FPoint sunsetPoint = clockPoint(ORBIT_RADIUS, sunsetAngle);
 
 	clock->kilter = minuteAngle(12*60 - sunSouth);
-
-	clock->origin = clock->center;
-	FPoint sunrisePoint  = clockPoint(clock->orbitRadius, sunriseAngle);
-	FPoint sunsetPoint   = clockPoint(clock->orbitRadius, sunsetAngle);
-
-	// calculate the horizon line relative to the origin.
-	fixed_t horizon = (sunrisePoint.y + sunsetPoint.y) / 2;
-
-	// calculate the limit of how far the orbit can be shifted.
-	fixed_t limit = clock->center.y - clock->outerLimit - INT_TO_FIXED(4);
-
-	// shift the orbit within the limit and shift the horizon by the excess.
-	fixed_t offset = horizon - clock->center.y;
-	fixed_t excess = 0;
-	if (offset > limit) {
-		excess = offset - limit;
-		offset = limit;
-	} else if (offset < -limit) {
-		excess = offset + limit;
-		offset = -limit;
-	}
-	clock->origin.y = clock->center.y - offset;
-	clock->horizon = clock->center.y + excess;
+	clock->horizon = (sunrisePoint.y + sunsetPoint.y) / 2;
 }
 
 void drawClock(Layer* layer, GContext* ctx) {
@@ -274,36 +279,40 @@ void drawClock(Layer* layer, GContext* ctx) {
 
 	// draw the sky
 	fill.size.h = h - bounds.origin.y;
-	graphics_context_set_fill_color(ctx, clock->colorAbove);
+	graphics_context_set_fill_color(ctx, clock->colors[COLOR_ABOVE]);
 	graphics_fill_rect(ctx, fill, 0, GCornerNone);
 
 	// draw the ground
 	fill.origin.y = h;
 	fill.size.h = bounds.origin.y + bounds.size.h - fill.origin.y;
-	graphics_context_set_fill_color(ctx, clock->colorBelow);
+	graphics_context_set_fill_color(ctx, clock->colors[COLOR_BELOW]);
 	graphics_fill_rect(ctx, fill, 0, GCornerNone);
 
 	// draw the horizon line
-	graphics_context_set_stroke_color(ctx, COLOR_FALLBACK(GColorDarkGray, GColorWhite));
-	graphics_draw_line(ctx, GPoint(0, h), GPoint(144,h));
+    fill.origin.y = h;
+    fill.size.h = 2;
+	graphics_context_set_fill_color(ctx, clock->colors[COLOR_MARKS]);
+    graphics_fill_rect(ctx, fill, 0, GCornerNone);
 
 	FContext fctx;
 	fctx_init_context(&fctx, ctx);
 
 	// draw the solar orbit as a ring of dots.
-	fctx_set_fill_color(&fctx, clock->orbitColor);
+	fctx_set_fill_color(&fctx, clock->colors[COLOR_MARKS]);
 	fctx_set_color_bias(&fctx, 0);
 	fctx_begin_fill(&fctx);
 	fctx_set_text_size(&fctx, g.font, 20);
 	fctx_set_rotation(&fctx, clock->kilter);
 	for (int h = 0; h < 24; ++h) {
+        FPoint c = clockPoint(ORBIT_RADIUS, hourAngle(h));
 
 		if (h % 6) {
-			FPoint c = clockPoint(clock->orbitRadius, hourAngle(h));
-			fctx_plot_circle(&fctx, &c, clock->solarRadius / 4);
+			fctx_plot_circle(&fctx, &c, PIP_RADIUS);
 		} else {
-			fixed_t r = clock->orbitRadius /*+ INT_TO_FIXED(3)*/;
-			fctx.offset = clockPoint(r, hourAngle(h));
+#ifdef PBL_ROUND
+			fctx_plot_circle(&fctx, &c, SOLAR_RADIUS);
+#endif
+			fctx_set_offset(&fctx, c);
 			if (h == 0) {
 				fctx_draw_string(&fctx, "00", g.font, GTextAlignmentCenter, FTextAnchorMiddle);
 			} else if (h == 6) {
@@ -320,22 +329,56 @@ void drawClock(Layer* layer, GContext* ctx) {
 
 	// draw the solar disc
 	uint32_t minute = clock->gregorian.tm_hour * 60 + clock->gregorian.tm_min;
-	FPoint sunPoint = clockPoint(clock->orbitRadius, minuteAngle(minute));
+	FPoint sunPoint = clockPoint(ORBIT_RADIUS, minuteAngle(minute));
 
 	fctx_begin_fill(&fctx);
-	fctx_set_fill_color(&fctx, clock->solarColor);
+	fctx_set_fill_color(&fctx, clock->colors[COLOR_SOLAR]);
 	fctx_set_color_bias(&fctx, -3);
-	fctx_plot_circle(&fctx, &sunPoint, clock->solarRadius - clock->solarStroke / 2);
+	fctx_plot_circle(&fctx, &sunPoint, SOLAR_RADIUS - SOLAR_STROKE / 2);
 	fctx_end_fill(&fctx);
 	fctx_set_color_bias(&fctx, 0);
 
 	fctx_begin_fill(&fctx);
-	fctx_set_fill_color(&fctx, clock->orbitColor);
-	fctx_plot_circle(&fctx, &sunPoint, clock->solarRadius);
-	fctx_plot_circle(&fctx, &sunPoint, clock->solarRadius - clock-> solarStroke);
+	fctx_set_fill_color(&fctx, clock->colors[COLOR_MARKS]);
+	fctx_plot_circle(&fctx, &sunPoint, SOLAR_RADIUS);
+	fctx_plot_circle(&fctx, &sunPoint, SOLAR_RADIUS - SOLAR_STROKE);
 	fctx_end_fill(&fctx);
 
+    fctx_begin_fill(&fctx);
+    fctx_set_fill_color(&fctx, clock->colors[COLOR_MARKS]);
+    fctx_plot_circle(&fctx, &clock->origin, READOUT_RADIUS);
+    fctx_end_fill(&fctx);
+
+    fctx_begin_fill(&fctx);
+    fctx_set_fill_color(&fctx, clock->colors[COLOR_WITHIN]);
+    fctx_plot_circle(&fctx, &clock->origin, READOUT_RADIUS - READOUT_STROKE);
+    fctx_end_fill(&fctx);
+
+    clock_copy_time_string(clock->strbuf, ARRAY_LENGTH(clock->strbuf));
+
+    fctx_begin_fill(&fctx);
+    fctx_set_rotation(&fctx, 0);
+    fctx_set_offset(&fctx, clock->origin);
+    fctx_set_text_size(&fctx, g.font, TIME_TEXT_SIZE);
+    fctx_set_fill_color(&fctx, clock->colors[COLOR_TEXT]);
+    fctx_draw_string(&fctx, clock->strbuf, g.font, GTextAlignmentCenter, FTextAnchorMiddle);
+    fctx_end_fill(&fctx);
+
 	fctx_deinit_context(&fctx);
+
+    // draw the date text
+    graphics_context_set_text_color(ctx, clock->colors[COLOR_TEXT]);
+    GFont font = fonts_get_system_font(DATE_FONT_KEY);
+    GRect box = bounds;
+    h = FIXED_TO_INT(clock->origin.y);
+    box.origin.y = h + 10;
+    strftime(clock->strbuf, ARRAY_LENGTH(clock->strbuf), "%B %d", &clock->gregorian);
+    graphics_draw_text(ctx, clock->strbuf, font, box, GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+
+    // draw the weekday text
+    box.origin.y = h - 36;
+    strftime(clock->strbuf, ARRAY_LENGTH(clock->strbuf), "%A", &clock->gregorian);
+    graphics_draw_text(ctx, clock->strbuf, font, box, GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
 }
 
 // ---------------------------------------------------------------------------
@@ -373,81 +416,79 @@ void logLocationFix(LocationFix* loc) {
 		tzsign, tzhour, tzmin, longdeg, longdir, latdeg, latdir, risehour, risemin, sethour, setmin);
 }
 
-void appmsg_inbox_received(DictionaryIterator *iterator, void *context) {
+void appmsg_inbox_received(DictionaryIterator* iterator, void *context) {
 
+	bool got_location = false;
 	Tuple* tuple;
 	for (tuple = dict_read_first(iterator); tuple; tuple = dict_read_next(iterator)) {
         if (AppKeyBluetoothAlert == tuple->key) {
             g.bluetoothAlert = (uint8_t)tuple->value->uint32;
             persist_write_int(AppKeyBluetoothAlert, g.bluetoothAlert);
-            APP_LOG(APP_LOG_LEVEL_DEBUG, "bluetooth alert <- %d", g.bluetoothAlert);
             //bluetoothConnectionCallback(bluetooth_connection_service_peek());
         } else if (AppKeyColorPalette == tuple->key && TUPLE_BYTE_ARRAY == tuple->type) {
-			APP_LOG(APP_LOG_LEVEL_DEBUG, "palette <- data[%d]", tuple->length);
-			uint16_t length = (tuple->length < PALETTE_SIZE) ? tuple->length : PALETTE_SIZE;
-			APP_LOG(APP_LOG_LEVEL_DEBUG, "  copy %d bytes", length);
-			memcpy(g.colorPalette, tuple->value->data, length);
-			APP_LOG(APP_LOG_LEVEL_DEBUG, "  persist palette");
-            persist_write_data(AppKeyColorPalette, g.colorPalette, PALETTE_SIZE);
-			applyPalette();
+			int length = (tuple->length < PALETTE_SIZE) ? tuple->length : PALETTE_SIZE;
+            persist_write_data(AppKeyColorPalette, tuple->value->data, length);
+			applyPalette(tuple->value->data, length);
 			layer_mark_dirty(g.layer);
         } else if (AppKeyTimestamp == tuple->key) {
+			got_location = true;
 			g.location.timestamp = tuple->value->int32;
+			persist_write_int(AppKeyTimestamp, g.location.timestamp);
 		} else if (AppKeyTimezone == tuple->key) {
 			g.location.timezone = tuple->value->int32;
+			persist_write_int(AppKeyTimezone,  g.location.timezone);
 		} else if (AppKeyLongitude == tuple->key) {
 			g.location.longitude = tuple->value->int32;
+			persist_write_int(AppKeyLongitude, g.location.longitude);
 		} else if (AppKeyLatitude == tuple->key) {
 			g.location.latitude = tuple->value->int32;
+			persist_write_int(AppKeyLatitude,  g.location.latitude);
 		} else if (AppKeySunrise == tuple->key) {
 			g.location.sunrise = tuple->value->int32;
+			persist_write_int(AppKeySunrise,   g.location.sunrise);
 		} else if (AppKeySunset == tuple->key) {
 			g.location.sunset = tuple->value->int32;
+			persist_write_int(AppKeySunset,    g.location.sunset);
 		} else if (AppKeySunSouth == tuple->key) {
 			g.location.sunsouth = tuple->value->int32;
+			persist_write_int(AppKeySunSouth,  g.location.sunsouth);
 		} else if (AppKeySunStatus == tuple->key) {
 			g.location.sunstat = tuple->value->int32;
+			persist_write_int(AppKeySunStatus, g.location.sunstat);
 		}
 	}
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "persist <- location <- appmsg");
-	persist_write_int(AppKeyTimestamp, g.location.timestamp);
-	persist_write_int(AppKeyTimezone,  g.location.timezone);
-	persist_write_int(AppKeyLongitude, g.location.longitude);
-	persist_write_int(AppKeyLatitude,  g.location.latitude);
-	persist_write_int(AppKeySunrise,   g.location.sunrise);
-	persist_write_int(AppKeySunset,    g.location.sunset);
-	persist_write_int(AppKeySunSouth,  g.location.sunsouth);
-	persist_write_int(AppKeySunStatus, g.location.sunstat);
-	logLocationFix(&g.location);
 
-	configureClock();
-	layer_mark_dirty(g.layer);
+	if (got_location) {
+		logLocationFix(&g.location);
+		configureClock();
+		layer_mark_dirty(g.layer);
+	}
+
 }
 
 void appmsg_inbox_dropped(AppMessageResult reason, void *context) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "appmsg_inbox_dropped %d", (int)reason);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "appmsg_inbox_dropped %d", (int)reason);
 }
 
 void appmsg_outbox_sent(DictionaryIterator *iterator, void *context) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "appmsg_outbox_sent");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "appmsg_outbox_sent");
 }
 
 void appmsg_outbox_failed(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "appmsg_outbox_failed %d", (int)reason);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "appmsg_outbox_failed %d", (int)reason);
 }
 
 void location_service_init() {
 
 	if (false && persist_exists(AppKeyTimestamp)) {
 		g.location.timestamp = persist_read_int(AppKeyTimestamp);
-		g.location.timezone = persist_read_int(AppKeyTimezone);
+		g.location.timezone  = persist_read_int(AppKeyTimezone);
 		g.location.longitude = persist_read_int(AppKeyLongitude);
 		g.location.latitude  = persist_read_int(AppKeyLatitude);
 		g.location.sunrise   = persist_read_int(AppKeySunrise);
 		g.location.sunset    = persist_read_int(AppKeySunset);
 		g.location.sunsouth  = persist_read_int(AppKeySunSouth);
 		g.location.sunstat   = persist_read_int(AppKeySunStatus);
-		APP_LOG(APP_LOG_LEVEL_DEBUG, "location <- persist");
 		logLocationFix(&g.location);
 	} else {
 		g.location.timestamp = 0;

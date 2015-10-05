@@ -374,11 +374,13 @@ var options = {
     bluetooth: 1,
     palette: 'default',
     colors: {
-        canvas: '000',
-        below: '000',
-        above: '000',
-        marks: '333',
-        solar: '1333'
+        behind: '333',
+        below: '123',
+        above: '331',
+        within: '000',
+        marks: '000',
+        text: '333',
+        solar: '1333',
     }
 };
 
@@ -386,15 +388,15 @@ function gcolor8(c) {
     'use strict';
     var a, r, g, b, i = 0;
     if (c.length === 4) {
-        a = parseInt(c.charAt(0), 10);
-        r = parseInt(c.charAt(1), 10);
-        g = parseInt(c.charAt(2), 10);
-        b = parseInt(c.charAt(3), 10);
+        a = parseInt(c.charAt(0), 4);
+        r = parseInt(c.charAt(1), 4);
+        g = parseInt(c.charAt(2), 4);
+        b = parseInt(c.charAt(3), 4);
     } else if (c.length === 3) {
         a = 3;
-        r = parseInt(c.charAt(0), 10);
-        g = parseInt(c.charAt(1), 10);
-        b = parseInt(c.charAt(2), 10);
+        r = parseInt(c.charAt(0), 4);
+        g = parseInt(c.charAt(1), 4);
+        b = parseInt(c.charAt(2), 4);
     }
     i = a * 64 + r * 16 + g * 4 + b;
     //console.log('color ' + c + ' -> (' + a + ',' + r + ',' + g + ',' + b + ') -> ' + i);
@@ -410,59 +412,18 @@ function sendOptions(ackHandler, nackHandler) {
 
     if (options.colors) {
         message.palette = [
-            gcolor8(options.colors.canvas),
-            gcolor8(options.colors.below),
-            gcolor8(options.colors.above),
-            gcolor8(options.colors.marks),
-            gcolor8(options.colors.solar)
+            gcolor8(options.colors.behind || '303'),
+            gcolor8(options.colors.below || '303'),
+            gcolor8(options.colors.above || '303'),
+            gcolor8(options.colors.within || '303'),
+            gcolor8(options.colors.marks || '303'),
+            gcolor8(options.colors.text || '303'),
+            gcolor8(options.colors.solar || '303')
         ];
     }
 
-    console.log('Send options ' + JSON.stringify(message));
+    console.log('send ' + JSON.stringify(message));
     Pebble.sendAppMessage(message, ackHandler, nackHandler);
-}
-
-// --------------------------------------------------------------------------
-// Diagnostic Reporting
-// --------------------------------------------------------------------------
-
-function readDiagnosticReports() {
-    'use strict';
-    var diagnostics = window.localStorage.getItem('diagnostics'),
-        reports = [];
-    if (diagnostics) {
-        try {
-            reports = JSON.parse(diagnostics);
-        } catch (ex) {
-            console.warn('Clearing corrupted diagnostic reports.  ' + ex.toString());
-        }
-    }
-    return reports;
-}
-
-function recordDiagnosticReport(report) {
-    'use strict';
-    report.timestamp = new Date().getTime();
-    var reports = readDiagnosticReports();
-    reports.push(report);
-    if (reports.length > 100) {
-        reports = reports.slice(reports.length - 100);
-    }
-    reports = JSON.stringify(reports);
-    window.localStorage.setItem('diagnostics', reports);
-}
-
-function dumpDiagnosticReports() {
-    'use strict';
-    var reports = readDiagnosticReports(),
-        timestamp = new Date();
-    console.log(reports.length + ' saved diagnostic reports.');
-    reports.forEach(function (report, index) {
-        timestamp.setTime(report.timestamp);
-        report.timestamp = undefined;
-        console.log('[' + index + '] ' + timestamp.toString() + ' - ' + JSON.stringify(report));
-    });
-    window.localStorage.removeItem('diagnostics');
 }
 
 // --------------------------------------------------------------------------
@@ -474,32 +435,33 @@ function locationSuccess(pos) {
     var coordinates = pos.coords,
         now = new Date(),
         utcOffset = now.getTimezoneOffset(),
-        sun = sunriset.sun_rise_set(now, coordinates.longitude, coordinates.latitude);
+        sun = sunriset.sun_rise_set(now, coordinates.longitude, coordinates.latitude),
+        message = {
+            'latitude': coordinates.latitude * 0x10000,
+            'longitude': coordinates.longitude * 0x10000,
+            'timezone': -utcOffset,
+            'timestamp': pos.timestamp / 1000,
+            'sunrise': sun.rise * 60,
+            'sunset': sun.set * 60,
+            'sunsouth': sun.south * 60,
+            'sunstat': sun.status
+        };
 
-    console.log('location success ' + coordinates.latitude + ', ' + coordinates.longitude + ' +-' + coordinates.accuracy + 'm');
-    console.log('sun:' + sun.rise + ' ~ ' + sun.south + ' ~ ' + sun.set + ' (' + sun.status + ')');
-    Pebble.sendAppMessage({
-        'latitude': coordinates.latitude * 0x10000,
-        'longitude': coordinates.longitude * 0x10000,
-        'timezone': -utcOffset,
-        'timestamp': pos.timestamp / 1000,
-        'sunrise': sun.rise * 60,
-        'sunset': sun.set * 60,
-        'sunsouth': sun.south * 60,
-        'sunstat': sun.status
-    }, function (event) {
+    console.log('location: ' + coordinates.latitude + ', ' + coordinates.longitude + ' +-' + coordinates.accuracy + 'm');
+    console.log('sun: ' + sun.rise + ' ~ ' + sun.south + ' ~ ' + sun.set + ' (' + sun.status + ')');
+    console.log('send ' + JSON.stringify(message));
+    Pebble.sendAppMessage(message, function (data) {
         // ack handler
-        //console.log('coordinates sent to device.  txid: ' + event.data.transactionId);
-    }, function (event) {
+        console.log('  ack txid: ' + data.transactionId);
+    }, function (data, error) {
         // nack handler
-        console.log('unable to deliver coordinates. ', event.error.message);
+        console.log('  error: ', error);
     });
 }
 
 function locationError(err) {
     'use strict';
-    console.warn('location error ', JSON.stringify(err));
-    recordDiagnosticReport({'location error': err});
+    console.warn('location error: ', JSON.stringify(err));
 }
 
 function locationRequest() {
@@ -510,8 +472,10 @@ function locationRequest() {
             'maximumAge': 5 * 60 * 1000     // 5 minutes (in milliseconds)
         };
     if (navigator.hasOwnProperty('geolocation')) {
-        //console.log('get current position');
+        console.log('get current position');
         navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+    } else {
+        console.log('location services not available');
     }
 }
 
@@ -525,40 +489,44 @@ Pebble.addEventListener('ready', function () {
     if (storedOptions) {
         try {
             options = JSON.parse(storedOptions);
-            console.log('Loaded stored options. ' + JSON.stringify(options));
+            console.log('stored options: ' + JSON.stringify(options));
         } catch (ex) {
-            console.log('Clearing corrupted options.');
+            console.log('clear corrupt options');
             window.localStorage.clear();
         }
     }
-    sendOptions(function (event) {
+    sendOptions(function (data) {
         locationRequest();
+    }, function (data, error) {
+        console.log('   error: ' + error);
     });
 });
 
-Pebble.addEventListener("showConfiguration", function () {
+Pebble.addEventListener('showConfiguration', function () {
     'use strict';
-    console.log('Show configuration.');
+    console.log('show configuration');
     var watch = {platform: 'aplite'},
         jsonOptions = JSON.stringify(options),
-        encodedOptions = encodeURIComponent(jsonOptions);
+        encodedOptions = encodeURIComponent(jsonOptions),
+        url = 'http://files.mustacea.com/horizon/dev/config.html';
 
     if (Pebble.getActiveWatchInfo) {
         watch = Pebble.getActiveWatchInfo();
         console.log('active watch info: ' + JSON.stringify(watch));
     }
 
-    Pebble.openURL('http://files.mustacea.com/horizon/1.0/configurable.html' +
+    //url = 'http://127.0.0.1:54404/config/index.html';
+    Pebble.openURL(url +
         '?nonce=' + Math.floor(new Date().getTime() / 1000) + '&platform=' + watch.platform +
         '#' + encodedOptions);
 });
 
 Pebble.addEventListener("webviewclosed", function (e) {
     'use strict';
-    console.log('Webview closed.');
+    console.log('webview closed.');
     if (e.response && e.response.length) {
         options = JSON.parse(decodeURIComponent(e.response));
-        console.log('Received options ' + JSON.stringify(options));
+        console.log('received options: ' + JSON.stringify(options));
         window.localStorage.setItem('options', JSON.stringify(options));
         sendOptions();
     }
