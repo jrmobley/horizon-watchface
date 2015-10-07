@@ -374,13 +374,13 @@ var options = {
     bluetooth: 1,
     palette: 'default',
     colors: {
-        behind: '333',
+        behind: '222',
         below: '123',
         above: '331',
-        within: '000',
+        within: '333',
         marks: '000',
-        text: '333',
-        solar: '1333',
+        text: '000',
+        solar: '333',
     }
 };
 
@@ -450,12 +450,10 @@ function locationSuccess(pos) {
     console.log('location: ' + coordinates.latitude + ', ' + coordinates.longitude + ' +-' + coordinates.accuracy + 'm');
     console.log('sun: ' + sun.rise + ' ~ ' + sun.south + ' ~ ' + sun.set + ' (' + sun.status + ')');
     console.log('send ' + JSON.stringify(message));
-    Pebble.sendAppMessage(message, function (data) {
-        // ack handler
-        console.log('  ack txid: ' + data.transactionId);
-    }, function (data, error) {
-        // nack handler
-        console.log('  error: ', error);
+    Pebble.sendAppMessage(message, function (result) {
+        console.log('ack tx ' + result.data.transactionId);
+    }, function (result) {
+        console.log(result.data.error.message);
     });
 }
 
@@ -495,10 +493,11 @@ Pebble.addEventListener('ready', function () {
             window.localStorage.clear();
         }
     }
-    sendOptions(function (data) {
+    sendOptions(function (result) {
+        console.log('ack tx ' + result.data.transactionId);
         locationRequest();
-    }, function (data, error) {
-        console.log('   error: ' + error);
+    }, function (result) {
+        console.log(result.data.error.message);
     });
 });
 
