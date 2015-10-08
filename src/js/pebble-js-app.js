@@ -406,7 +406,7 @@ function gcolor8(c) {
 function sendOptions(ackHandler, nackHandler) {
     'use strict';
     var message = {
-        bluetooth: parseInt(options.bluetooth, 10),
+        bluetooth: parseInt(options.bluetooth || 0, 10),
         palette: 0
     };
 
@@ -422,13 +422,9 @@ function sendOptions(ackHandler, nackHandler) {
         ];
     }
 
-    console.log('send ' + JSON.stringify(message));
+    console.log('send ' + JSON.stringify(message, null, 2));
     Pebble.sendAppMessage(message, ackHandler, nackHandler);
 }
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
 
 function locationSuccess(pos) {
     'use strict';
@@ -449,7 +445,7 @@ function locationSuccess(pos) {
 
     console.log('location: ' + coordinates.latitude + ', ' + coordinates.longitude + ' +-' + coordinates.accuracy + 'm');
     console.log('sun: ' + sun.rise + ' ~ ' + sun.south + ' ~ ' + sun.set + ' (' + sun.status + ')');
-    console.log('send ' + JSON.stringify(message));
+    console.log('send ' + JSON.stringify(message, null, 2));
     Pebble.sendAppMessage(message, function (result) {
         console.log('ack tx ' + result.data.transactionId);
     }, function (result) {
@@ -487,7 +483,7 @@ Pebble.addEventListener('ready', function () {
     if (storedOptions) {
         try {
             options = JSON.parse(storedOptions);
-            console.log('stored options: ' + JSON.stringify(options));
+            console.log('loaded options: ' + JSON.stringify(options, null, 2));
         } catch (ex) {
             console.log('clear corrupt options');
             window.localStorage.clear();
@@ -511,10 +507,10 @@ Pebble.addEventListener('showConfiguration', function () {
 
     if (Pebble.getActiveWatchInfo) {
         watch = Pebble.getActiveWatchInfo();
-        console.log('active watch info: ' + JSON.stringify(watch));
+        console.log('active watch info: ' + JSON.stringify(watch, null, 2));
     }
 
-    //url = 'http://127.0.0.1:54404/config/index.html';
+    //url = 'http://127.0.0.1:55683/config/index.html';
     Pebble.openURL(url +
         '?nonce=' + Math.floor(new Date().getTime() / 1000) + '&platform=' + watch.platform +
         '#' + encodedOptions);
@@ -525,7 +521,7 @@ Pebble.addEventListener("webviewclosed", function (e) {
     console.log('webview closed.');
     if (e.response && e.response.length) {
         options = JSON.parse(decodeURIComponent(e.response));
-        console.log('received options: ' + JSON.stringify(options));
+        console.log('save options: ' + JSON.stringify(options, null, 2));
         window.localStorage.setItem('options', JSON.stringify(options));
         sendOptions();
     }

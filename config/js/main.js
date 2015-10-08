@@ -64,6 +64,15 @@ function quatColorFromHex(hexColor) {
     return quat;
 }
 
+function rgbaColorFromHex(hexColor, alpha) {
+    var hex = hexColor.substr(-6),
+        r = parseInt(hex.substr(0, 2), 16).toString(10),
+        g = parseInt(hex.substr(2, 2), 16).toString(10),
+        b = parseInt(hex.substr(4, 2), 16).toString(10),
+        rgba = 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+    return rgba;
+}
+
 $().ready(function () {
     'use strict';
     var platform = getQueryParam('platform', 'aplite'),
@@ -73,10 +82,12 @@ $().ready(function () {
         palettes = {
             'default': { behind: '333', below: '123', above: '331', within: '000', marks: '000', text: '333', solar: '333' },
             'inverse': { behind: '333', below: '123', above: '331', within: '333', marks: '000', text: '000', solar: '333' },
-            'test':    { behind: '333', below: '030', above: '003', within: '300', marks: '000', text: '333', solar: '333' }
+            'bw':      { behind: '000', below: '000', above: '000', within: '333', marks: '333', text: '000', solar: '000' },
+            'wb':      { behind: '333', below: '333', above: '333', within: '000', marks: '000', text: '333', solar: '333' },
+            'black':   { behind: '333', below: '000', above: '000', within: '000', marks: '333', text: '333', solar: '000' }
         },
         aplitePalettes = ['default', 'inverse'];
-
+    
     $('#palette-preset').on('change', function (event) {
         console.log('palette preset on change: ' + $(event.target).val());
 
@@ -90,22 +101,29 @@ $().ready(function () {
             for (key in colors) {
                 selector = '#color-' + key;
                 hexColor = hexColorFromQuat(colors[key]);
-                console.log(selector + ' <- ' + hexColor);
                 $(selector).val(hexColor).change();
             }
         }
+        $('.custom-colors').css('display', (palette !== 'custom') ? 'none' : '');
+        $('.item-color').prop('disabled', palette !== 'custom');
     });
 
-    console.log('attach change handler to color pickers');
     $('.item-color').on('change', function (event) {
         var target = $(event.target),
             name = target.attr('name'),
             selector = 'svg .color-' + name,
             color = target.val().replace(/^0x/, '#')
-        console.log(selector + ' <- ' + color);
+        if (name === 'solar') {
+            color = rgbaColorFromHex(color, 0.5);
+        }
         $(selector).css('color', color);
     });
 
+    if (options.custom) {
+        palettes.custom = options.custom;
+    } else {
+        palettes.custom = options.colors;
+    }
     $('#palette-preset').val(options.palette).change();
         
     $('#b-cancel').on('click', function () {
@@ -115,16 +133,19 @@ $().ready(function () {
 
     function extractColors(palette) {
         var colors = {};
-        if (palettes.hasOwnProperty(palette)) {
-            return palettes[palette];
+        if (palette === 'custom') {
+            console.log('record custom colors');
+            $('.item-color').each(function (index, element) {
+                var picker = $(this),
+                    name = picker.attr('name'),
+                    color = quatColorFromHex(picker.val());
+                colors[name] = color;
+            });
+            palettes[palette] = colors;
         }
-        $('.item-color').each(function (index, element) {
-            var picker = $(this),
-                name = picker.attr('name'),
-                color = quatColorFromHex(picker.val());
-            colors[name] = color;
-        });
-        console.log(JSON.stringify(colors));
+        if (palettes.hasOwnProperty(palette)) {
+            colors = palettes[palette];
+        }
         return colors;
     }
     
@@ -137,12 +158,14 @@ $().ready(function () {
                 'bluetooth': $('#bluetooth-select').val(),
                 'readout': $('#readout-select').val(),
                 'palette': palette,
-                'colors': colors
+                'colors': colors,
+                'custom': palettes['custom']
             },
             jsonOptions = JSON.stringify(options),
             encodedOptions = encodeURIComponent(jsonOptions),
             url = returnTo + encodedOptions;
-        console.log("Return to: " + url);
+        console.log('Return options: ' + jsonOptions);
+        console.log('Return to: ' + url);
         location.href = url;
     });
 

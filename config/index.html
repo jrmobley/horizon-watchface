@@ -41,56 +41,45 @@
 
     <div class='item-container'>
         <div class='item-container-header'>
-            Color Palette
-        </div>
-        <div class='item-container-content'>
-            <label class='item'>
-                Preset
-                <select class='item-select' id='palette-preset' dir='rtl'>
-                    <option value='default'>Dark</option>
-                    <option value='inverse'>Light</option>
-                    <option value='test'>Test</option>
-                    <option value='custom'>Custom</option>
-                </select>
-            </label>
-            <label class='item'>
-                Behind
-                <input type="text" class="item-color item-color-normal" name="behind" id="color-behind" value="#000000">
-            </label>
-            <label class='item'>
-                Above
-                <input type="text" class="item-color item-color-normal" name="above" id="color-above" value="#000000">
-            </label>
-            <label class='item'>
-                Below
-                <input type="text" class="item-color item-color-normal" name="below" id="color-below" value="#000000">
-            </label>
-            <label class='item'>
-                Within
-                <input type="text" class="item-color item-color-normal" name="within" id="color-within" value="#000000">
-            </label>
-            <label class='item'>
-                Markings
-                <input type="text" class="item-color item-color-normal" name="marks" id="color-marks" value="#000000">
-            </label>
-            <label class='item'>
-                Text
-                <input type="text" class="item-color item-color-normal" name="text" id="color-text" value="#000000">
-            </label>
-            <label class='item'>
-                Solar
-                <input type="text" class="item-color item-color-normal" name="solar" id="color-solar" value="#000000">
-            </label>
-        </div>
-        <div class='item-container-header'>
             Preview
         </div>
         <div class='item-container-content'>
-            <div class='preview'>
+            <div class='item preview'>
                 <svg role='img' viewBox='-90 -90 180 180'>
                     <circle class='color-behind' r='90' fill='currentColor' stroke='none' />
                     <path class='color-above' stroke='currentColor' fill='none' stroke-width='28' d='M-76,0 A76,76 0 0,1 76,0' />
                     <path class='color-below' stroke='currentColor' fill='none' stroke-width='28' d='M-76,0 A76,76 0 0,0 76,0' />
+                    <circle class='color-marks' cx='0' cy='75' r='5' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(15 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(30 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(45 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(60 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(75 0 0)' stroke='none' fill='currentColor' />
+
+                    <circle class='color-marks' cx='0' cy='75' r='5' transform='rotate(90 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(105 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(120 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(135 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(150 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(165 0 0)' stroke='none' fill='currentColor' />
+
+                    <circle class='color-marks' cx='0' cy='75' r='5' transform='rotate(180 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-165 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-150 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-135 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-120 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-105 0 0)' stroke='none' fill='currentColor' />
+
+                    <circle class='color-marks' cx='0' cy='75' r='5' transform='rotate(-90 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-75 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-60 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-45 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-30 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-15 0 0)' stroke='none' fill='currentColor' />
+                    
+                    <circle class='color-solar' cx='0' cy='75' r='9' transform='rotate(198 0 0)' stroke='none' fill='currentColor' />
+                    <circle class='color-marks' cx='0' cy='75' r='9' transform='rotate(198 0 0)' stroke='currentColor' fill='none' stroke-width='2' />
+                    
                     <rect class='color-marks' x='-50%' y='-1' width='100%' height='2' fill='currentColor' stroke='none' />
                     <circle class='color-marks' r='62' fill='currentColor' stroke='none'/>
                     <circle class='color-within' r='60' fill='currentColor' stroke='none'/>
@@ -99,6 +88,55 @@
                     </text>
                 </svg>
             </div>
+        </div>
+        <div class='item-container-header'>
+            Options
+        </div>
+        <div class='item-container-content'>
+            <label class='item'>
+                Color Palette
+                <select class='item-select' id='palette-preset' dir='rtl'>
+                    <option value='default'>Dark</option>
+                    <option value='inverse'>Light</option>
+                    <option value='bw'>Black and White</option>
+                    <option value='wb'>White and Black</option>
+                    <option value='black'>Black</option>
+                    <option value='custom'>Custom</option>
+                </select>
+            </label>
+        </div>
+        <div class='item-container-header custom-colors'>
+            Custom Colors
+        </div>
+        <div class='item-container-content custom-colors'>
+            <label class='item color-picker'>
+                Behind
+                <input type="text" class="item-color item-color-normal" name="behind" id="color-behind" value="#000000">
+            </label>
+            <label class='item color-picker'>
+                Above
+                <input type="text" class="item-color item-color-normal" name="above" id="color-above" value="#000000">
+            </label>
+            <label class='item color-picker'>
+                Below
+                <input type="text" class="item-color item-color-normal" name="below" id="color-below" value="#000000">
+            </label>
+            <label class='item color-picker'>
+                Within
+                <input type="text" class="item-color item-color-normal" name="within" id="color-within" value="#000000">
+            </label>
+            <label class='item color-picker'>
+                Markings
+                <input type="text" class="item-color item-color-normal" name="marks" id="color-marks" value="#000000">
+            </label>
+            <label class='item color-picker'>
+                Text
+                <input type="text" class="item-color item-color-normal" name="text" id="color-text" value="#000000">
+            </label>
+            <label class='item color-picker'>
+                Solar
+                <input type="text" class="item-color item-color-normal" name="solar" id="color-solar" value="#000000">
+            </label>
         </div>
     </div>
 
