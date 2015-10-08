@@ -445,7 +445,16 @@ void drawClock(Layer* layer, GContext* ctx) {
     fctx_plot_circle(&fctx, &g.origin, READOUT_RADIUS - READOUT_STROKE);
     fctx_end_fill(&fctx);
 
-    clock_copy_time_string(g.strbuf, ARRAY_LENGTH(g.strbuf));
+    if (clock_is_24h_style()) {
+        /* For 24h format, use strftime, because clock_copy_string does
+           not prepend a leading zero to single digit hours. */
+        strftime(g.strbuf, ARRAY_LENGTH(g.strbuf), "%H:%M", &g.gregorian);
+    } else {
+        /* For 12h format, use clock_copy_time_string, because there is no
+           strftime format specifier that does not prepend a leading zero
+           to single digit hours. */
+        clock_copy_time_string(g.strbuf, ARRAY_LENGTH(g.strbuf));
+    }
 
     fctx_begin_fill(&fctx);
     fctx_set_rotation(&fctx, 0);
