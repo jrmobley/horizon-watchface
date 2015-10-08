@@ -503,17 +503,21 @@ Pebble.addEventListener('showConfiguration', function () {
     var watch = {platform: 'aplite'},
         jsonOptions = JSON.stringify(options),
         encodedOptions = encodeURIComponent(jsonOptions),
-        url = 'http://files.mustacea.com/horizon/dev/config.html';
+        url = 'http://files.mustacea.com/horizon/1.1/config.html',
+        platform,
+        nonce = '';
+
+    //url = 'http://127.0.0.1:55683/config/index.html';
 
     if (Pebble.getActiveWatchInfo) {
         watch = Pebble.getActiveWatchInfo();
         console.log('active watch info: ' + JSON.stringify(watch, null, 2));
     }
-
-    //url = 'http://127.0.0.1:55683/config/index.html';
-    Pebble.openURL(url +
-        '?nonce=' + Math.floor(new Date().getTime() / 1000) + '&platform=' + watch.platform +
-        '#' + encodedOptions);
+    url += '?platform=' + watch.platform;
+    //url += '&nonce=' + Math.floor(new Date().getTime() / 1000);
+    url += '#' + encodedOptions;
+    console.log('open ' + url);
+    Pebble.openURL(url);
 });
 
 Pebble.addEventListener("webviewclosed", function (e) {
