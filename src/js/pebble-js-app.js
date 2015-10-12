@@ -465,7 +465,7 @@ function locationRequest() {
             'timeout': 60 * 1000,           // 1 minute (in milliseconds)
             'maximumAge': 5 * 60 * 1000     // 5 minutes (in milliseconds)
         };
-    if (navigator.hasOwnProperty('geolocation')) {
+    if (navigator.geolocation) {
         console.log('get current position');
         navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
     } else {
