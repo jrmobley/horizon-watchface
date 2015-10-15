@@ -76,7 +76,7 @@ function rgbaColorFromHex(hexColor, alpha) {
 $().ready(function () {
     'use strict';
     var platform = getQueryParam('platform', 'aplite'),
-        version = getQueryParam('version', '1.1'),
+        version = getQueryParam('version', '1.3'),
         returnTo = getQueryParam('return_to', 'pebblejs://close#'),
         palettePreview = $('.preview'),
         palettes = {
@@ -87,7 +87,7 @@ $().ready(function () {
             'black':   { behind: '333', below: '000', above: '000', within: '000', marks: '333', text: '333', solar: '000' }
         },
         aplitePalettes = ['default', 'inverse'];
-    
+
     $('#palette-preset').on('change', function (event) {
         console.log('palette preset on change: ' + $(event.target).val());
 
@@ -96,7 +96,7 @@ $().ready(function () {
             key,
             selector,
             hexColor;
-        
+
         if (colors) {
             for (key in colors) {
                 selector = '#color-' + key;
@@ -112,7 +112,7 @@ $().ready(function () {
         var target = $(event.target),
             name = target.attr('name'),
             selector = 'svg .color-' + name,
-            color = target.val().replace(/^0x/, '#')
+            color = target.val().replace(/^0x/, '#');
         if (name === 'solar') {
             color = rgbaColorFromHex(color, 0.5);
         }
@@ -125,7 +125,7 @@ $().ready(function () {
         palettes.custom = options.colors;
     }
     $('#palette-preset').val(options.palette).change();
-        
+
     $('#b-cancel').on('click', function () {
         console.log('Cancel');
         location.href = returnTo;
@@ -148,7 +148,7 @@ $().ready(function () {
         }
         return colors;
     }
-    
+
     $('#b-submit').on('click', function () {
         console.log('Submit');
         var preset = $('#palette-preset'),
@@ -159,7 +159,7 @@ $().ready(function () {
                 'readout': $('#readout-select').val(),
                 'palette': palette,
                 'colors': colors,
-                'custom': palettes['custom']
+                'custom': palettes.custom
             },
             jsonOptions = JSON.stringify(options),
             encodedOptions = encodeURIComponent(jsonOptions),

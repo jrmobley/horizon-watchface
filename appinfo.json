@@ -3,8 +3,8 @@
   "shortName": "Horizon",
   "longName": "Horizon",
   "companyName": "JR Mobley",
-  "versionCode": 2,
-  "versionLabel": "1.2",
+  "versionCode": 3,
+  "versionLabel": "1.3",
   "sdkVersion": "3",
   "targetPlatforms": ["basalt", "chalk"],
   "capabilities": ["configurable", "location"],
@@ -24,6 +24,12 @@
   },
   "resources": {
     "media": [
+        {
+            "menuIcon": true,
+            "name": "MENU_ICON",
+            "type": "png",
+            "file": "icon.png"
+        },
         {
             "name": "DIGITS_FFONT",
             "type": "raw",

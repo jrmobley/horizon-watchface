@@ -503,7 +503,7 @@ Pebble.addEventListener('showConfiguration', function () {
     var watch = {platform: 'aplite'},
         jsonOptions = JSON.stringify(options),
         encodedOptions = encodeURIComponent(jsonOptions),
-        url = 'http://files.mustacea.com/horizon/1.1/config.html',
+        url = 'http://files.mustacea.com/horizon/1.3/config.html',
         platform,
         nonce = '';
 
