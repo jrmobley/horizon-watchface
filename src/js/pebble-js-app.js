@@ -381,6 +381,7 @@ var options = {
         marks: '000',
         text: '000',
         solar: '333',
+        charge: '230'
     }
 };
 
@@ -407,6 +408,7 @@ function sendOptions(ackHandler, nackHandler) {
     'use strict';
     var message = {
         bluetooth: parseInt(options.bluetooth || 0, 10),
+        battery: parseInt(options.battery || 0, 10),
         palette: 0
     };
 
@@ -418,7 +420,8 @@ function sendOptions(ackHandler, nackHandler) {
             gcolor8(options.colors.within || '303'),
             gcolor8(options.colors.marks || '303'),
             gcolor8(options.colors.text || '303'),
-            gcolor8(options.colors.solar || '303')
+            gcolor8(options.colors.solar || '303'),
+            gcolor8(options.colors.charge || '303')
         ];
     }
 
@@ -503,7 +506,7 @@ Pebble.addEventListener('showConfiguration', function () {
     var watch = {platform: 'aplite'},
         jsonOptions = JSON.stringify(options),
         encodedOptions = encodeURIComponent(jsonOptions),
-        url = 'http://files.mustacea.com/horizon/1.3/config.html',
+        url = 'http://files.mustacea.com/horizon/1.4/config.html',
         platform,
         nonce = '';
 

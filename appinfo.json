@@ -3,8 +3,7 @@
   "shortName": "Horizon",
   "longName": "Horizon",
   "companyName": "JR Mobley",
-  "versionCode": 3,
-  "versionLabel": "1.3",
+  "versionLabel": "1.4",
   "sdkVersion": "3",
   "targetPlatforms": ["basalt", "chalk"],
   "capabilities": ["configurable", "location"],
@@ -20,7 +19,8 @@
     "sunsouth": 107,
 	"sunstat": 108,
     "bluetooth": 109,
-    "palette": 110
+    "battery": 110,
+    "palette": 111
   },
   "resources": {
     "media": [

@@ -15,15 +15,15 @@ function loadOptions() {
     if (options.bluetooth === undefined) {
         options.bluetooth = 1;
     }
-    if (options.readout === undefined) {
-        options.readout = 0;
+    if (options.battery === undefined) {
+        options.battery = 0;
     }
     if (options.palette === undefined) {
         options.palette = 'default';
     }
 
     $('#bluetooth-select').val(options.bluetooth);
-    $('#readout-select').val(options.readout);
+    if (options.battery) $('#battery-toggle').attr('checked', 1);
 }
 
 (function () {
@@ -76,18 +76,26 @@ function rgbaColorFromHex(hexColor, alpha) {
 $().ready(function () {
     'use strict';
     var platform = getQueryParam('platform', 'aplite'),
-        version = getQueryParam('version', '1.3'),
+        version = getQueryParam('version', '1.4'),
         returnTo = getQueryParam('return_to', 'pebblejs://close#'),
         palettePreview = $('.preview'),
         palettes = {
-            'default': { behind: '333', below: '123', above: '331', within: '000', marks: '000', text: '333', solar: '333' },
-            'inverse': { behind: '333', below: '123', above: '331', within: '333', marks: '000', text: '000', solar: '333' },
-            'bw':      { behind: '000', below: '000', above: '000', within: '333', marks: '333', text: '000', solar: '000' },
-            'wb':      { behind: '333', below: '333', above: '333', within: '000', marks: '000', text: '333', solar: '333' },
-            'black':   { behind: '333', below: '000', above: '000', within: '000', marks: '333', text: '333', solar: '000' }
+            'default': { behind: '333', below: '123', above: '331', within: '000', marks: '000', text: '333', charge: '130', solar: '333' },
+            'inverse': { behind: '333', below: '123', above: '331', within: '333', marks: '000', text: '000', charge: '130', solar: '333' },
+            'bw':      { behind: '000', below: '000', above: '000', within: '333', marks: '333', text: '000', charge: '000', solar: '000' },
+            'wb':      { behind: '333', below: '333', above: '333', within: '000', marks: '000', text: '333', charge: '333', solar: '333' },
+            'black':   { behind: '333', below: '000', above: '000', within: '000', marks: '333', text: '333', charge: '000', solar: '000' }
         },
         aplitePalettes = ['default', 'inverse'];
 
+    $('#battery-toggle').on('change', function (event) {
+        console.log('alert change: ' + $(event.target).attr('checked'));
+        
+        var battery = $(event.target).attr('checked');
+        $('#battery-preview').css('display', battery ? 'block' : 'none');
+    }).change();
+    
+    
     $('#palette-preset').on('change', function (event) {
         console.log('palette preset on change: ' + $(event.target).val());
 
@@ -156,7 +164,7 @@ $().ready(function () {
             colors = extractColors(palette),
             options = {
                 'bluetooth': $('#bluetooth-select').val(),
-                'readout': $('#readout-select').val(),
+                'battery': $('#battery-toggle:checked').val() ? 1 : 0,
                 'palette': palette,
                 'colors': colors,
                 'custom': palettes.custom

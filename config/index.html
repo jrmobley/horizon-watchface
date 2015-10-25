@@ -13,31 +13,25 @@
 
 <body>
 
-    <!-- div class='item-container'>
+    <div class='item-container'>
         <div class='item-container-header'>
             Options
         </div>
         <div class='item-container-content'>
-            <label class='item'>
+            <!-- label class='item'>
                 Disconnect Alert
                 <select class='item-select' id='bluetooth-select' dir='rtl'>
                     <option value='0'>None</option>
                     <option value='1'>Visual</option>
                     <option value='2'>Visual + Vibration</option>
                 </select>
-            </label>
+            </label -->
             <label class='item'>
-                Readout
-                <select class='item-select' dir='rtl' id='readout-select'>
-                    <option value='0'>Original Mix</option>
-                    <option value='2'>Default Locale</option>
-                    <option value='3'>Default + Time</option>
-                    <option value='4'>Japanese Locale</option>
-                    <option value='5'>Japanese + Time</option>
-                </select>
+                Battery Indicator
+                <input type='checkbox' class='item-toggle' id='battery-toggle'>
             </label>
         </div>
-    </div -->
+    </div>
 
     <div class='item-container'>
         <div class='item-container-header'>
@@ -46,46 +40,42 @@
         <div class='item-container-content'>
             <div class='item preview'>
                 <svg role='img' viewBox='-90 -90 180 180'>
-                    <circle class='color-behind' r='90' fill='currentColor' stroke='none' />
-                    <path class='color-above' stroke='currentColor' fill='none' stroke-width='28' d='M-76,0 A76,76 0 0,1 76,0' />
-                    <path class='color-below' stroke='currentColor' fill='none' stroke-width='28' d='M-76,0 A76,76 0 0,0 76,0' />
-                    <circle class='color-marks' cx='0' cy='75' r='5' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(15 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(30 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(45 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(60 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(75 0 0)' stroke='none' fill='currentColor' />
-
-                    <circle class='color-marks' cx='0' cy='75' r='5' transform='rotate(90 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(105 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(120 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(135 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(150 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(165 0 0)' stroke='none' fill='currentColor' />
-
-                    <circle class='color-marks' cx='0' cy='75' r='5' transform='rotate(180 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-165 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-150 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-135 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-120 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-105 0 0)' stroke='none' fill='currentColor' />
-
-                    <circle class='color-marks' cx='0' cy='75' r='5' transform='rotate(-90 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-75 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-60 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-45 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-30 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='3' transform='rotate(-15 0 0)' stroke='none' fill='currentColor' />
+                    <defs>
+                        <g id='quarter-day' stroke='none' fill='currentColor'>
+                            <circle cx='0' cy='75' r='5' />
+                            <circle cx='0' cy='75' r='3' transform='rotate(15 0 0)' />
+                            <circle cx='0' cy='75' r='3' transform='rotate(30 0 0)' />
+                            <circle cx='0' cy='75' r='3' transform='rotate(45 0 0)' />
+                            <circle cx='0' cy='75' r='3' transform='rotate(60 0 0)' />
+                            <circle cx='0' cy='75' r='3' transform='rotate(75 0 0)' />
+                        </g>
+                        <path id='battery-dish' stroke-width='2' d="M-36.3318,49 A61,61 0 0,0 36.3318,49 Z"/>
+                    </defs>
                     
-                    <circle class='color-solar' cx='0' cy='75' r='9' transform='rotate(198 0 0)' stroke='none' fill='currentColor' />
-                    <circle class='color-marks' cx='0' cy='75' r='9' transform='rotate(198 0 0)' stroke='currentColor' fill='none' stroke-width='2' />
+                    <circle class='color-behind' stroke='none'         fill='currentColor' r='90' />
+                    <path   class='color-above'  stroke='currentColor' fill='none'         stroke-width='28' d='M-76,0 A76,76 0 0,1 76,0' />
+                    <path   class='color-below'  stroke='currentColor' fill='none'         stroke-width='28' d='M-76,0 A76,76 0 0,0 76,0' />
                     
-                    <rect class='color-marks' x='-50%' y='-1' width='100%' height='2' fill='currentColor' stroke='none' />
-                    <circle class='color-marks' r='62' fill='currentColor' stroke='none'/>
-                    <circle class='color-within' r='60' fill='currentColor' stroke='none'/>
-                    <text class='color-text' alignment-baseline='central' text-anchor='middle' font-size='36' fill='currentColor'>
+                    <use    class='color-marks'                                            transform='rotate(  0 0 0)' xlink:href='#quarter-day' />
+                    <use    class='color-marks'                                            transform='rotate( 90 0 0)' xlink:href='#quarter-day' />
+                    <use    class='color-marks'                                            transform='rotate(180 0 0)' xlink:href='#quarter-day' />
+                    <use    class='color-marks'                                            transform='rotate(270 0 0)' xlink:href='#quarter-day' />
+
+                    <circle class='color-solar'  stroke='none'         fill='currentColor' cx='0' cy='75' r='9' transform='rotate(198 0 0)' />
+                    <circle class='color-marks'  stroke='currentColor' fill='none'         cx='0' cy='75' r='9' transform='rotate(198 0 0)' stroke-width='2' />
+
+                    <rect   class='color-marks'  stroke='none'         fill='currentColor' x='-50%' y='-1' width='100%' height='2' />
+                    <circle class='color-marks'  stroke='none'         fill='currentColor' r='62'/>
+                    <circle class='color-within' stroke='none'         fill='currentColor' r='60'/>
+                    <text   class='color-text'   stroke='none'         fill='currentColor' alignment-baseline='central' text-anchor='middle' font-size='36'>
                         time
                     </text>
+                    
+                    <g id='battery-preview'>
+                    <use    class='color-charge' stroke='none'         fill='currentColor' xlink:href='#battery-dish' />
+                    <use    class='color-marks'  stroke='currentColor' fill='none'         xlink:href='#battery-dish' />
+                    </g>
+                    
                 </svg>
             </div>
         </div>
@@ -132,6 +122,10 @@
             <label class='item color-picker'>
                 Text
                 <input type="text" class="item-color item-color-normal" name="text" id="color-text" value="#000000">
+            </label>
+            <label class='item color-picker'>
+                Charge
+                <input type='text' class='item-color item-color-normal' name='charge' id='color-charge' value='#000000'>
             </label>
             <label class='item color-picker'>
                 Solar

@@ -5,6 +5,7 @@
 #include "pebble.h"
 #include "fctx/fctx.h"
 #include "fctx/ffont.h"
+#include "isqrt.h"
 #include "debug.h"
 
 // --------------------------------------------------------------------------
@@ -30,23 +31,25 @@
 #define WDAY_TEXT_OFFSET -36
 #define ORBIT_RADIUS   INT_TO_FIXED(75)
 #define SOLAR_RADIUS   INT_TO_FIXED(10)
-#define SOLAR_STROKE   INT_TO_FIXED(2)
+#define SOLAR_INSET    INT_TO_FIXED(2)
 #define PIP_RADIUS     (SOLAR_RADIUS / 4)
 #define READOUT_RADIUS INT_TO_FIXED(62)
-#define READOUT_STROKE INT_TO_FIXED(2)
+#define READOUT_INSET  INT_TO_FIXED(2)
+#define BATTERY_DISH_RADIUS 61
 
 #else // PBL_RECT
 
 #define TIME_TEXT_SIZE 30
 #define DATE_FONT_KEY  FONT_KEY_GOTHIC_14
-#define DATE_TEXT_OFFSET 11
+#define DATE_TEXT_OFFSET 10
 #define WDAY_TEXT_OFFSET -30
 #define ORBIT_RADIUS   INT_TO_FIXED(61)
 #define SOLAR_RADIUS   INT_TO_FIXED(8)
-#define SOLAR_STROKE   INT_TO_FIXED(2)
+#define SOLAR_INSET    INT_TO_FIXED(2)
 #define PIP_RADIUS     (SOLAR_RADIUS / 4)
 #define READOUT_RADIUS INT_TO_FIXED(50)
-#define READOUT_STROKE INT_TO_FIXED(2)
+#define READOUT_INSET  INT_TO_FIXED(2)
+#define BATTERY_DISH_RADIUS 49
 
 #endif
 
@@ -66,29 +69,43 @@ typedef enum AppKeys {
 	AppKeySunSouth,
 	AppKeySunStatus,
 	AppKeyBluetoothAlert,
+    AppKeyBatteryIndicator,
 	AppKeyColorPalette,
 } AppKeys;
 
-enum Palette {
-    COLOR_BEHIND,
-    COLOR_BELOW,
-    COLOR_ABOVE,
-    COLOR_WITHIN,
-    COLOR_MARKS,
-    COLOR_TEXT,
-    COLOR_SOLAR,
-    PALETTE_SIZE,
+enum BluetoothAlert {
+    BluetoothAlertNone,
+    BluetoothAlertVisual,
+    BluetoothAlertVibe,
 };
 
-static const uint8_t DEFAULT_PALETTE[PALETTE_SIZE] = {
+enum BatteryIndicator {
+    BatteryIndicatorNone,
+    BatteryIndicatorDish,
+};
+
+enum Palette {
+    PaletteColorBehind,
+    PaletteColorBelow,
+    PaletteColorAbove,
+    PaletteColorWithin,
+    PaletteColorMarks,
+    PaletteColorText,
+    PaletteColorSolar,
+    PaletteColorCharge,
+    PaletteSize,
+};
+
+static const uint8_t kDefaultPalette[PaletteSize] = {
     //AARRGGBB
-    0b11101010,
-    0b11011011,
-    0b11111101,
-    0b11111111,
-    0b11000000,
-    0b11000000,
-    0b11111111,
+    0b11101010, // Behind: 222 (Light Gray)
+    0b11011011, // Below : 123 (Picton Blue)
+    0b11111101, // Above : 331 (Icterine)
+    0b11111111, // Within: 333 (White)
+    0b11000000, // Marks : 000 (Black)
+    0b11000000, // Text  : 000 (Black)
+    0b11111111, // Solar : 333 (White)
+    0b11101100, // Charge: 230 (Spring Bud)
 };
 
 typedef struct {
@@ -118,10 +135,12 @@ struct Clock {
 
 	// configuration
 	uint8_t bluetoothAlert;
-    GColor colors[PALETTE_SIZE];
+    uint8_t batteryIndicator;
+    GColor colors[PaletteSize];
 
 	// external state
 	struct tm gregorian;
+    uint16_t battery;
 	LocationFix location;
 
 	// computed state
@@ -130,6 +149,7 @@ struct Clock {
 	uint16_t horizon;
 	int32_t kilter;
     char strbuf[32];
+    fixed_t battery_x[14];
 
     // animated state
     uint16_anim_t above;
@@ -150,7 +170,9 @@ static void configureClock();
 static void animateClock();
 static void interpolateClock(Animation* animation, const AnimationProgress progress);
 static void drawClock(Layer* layer, GContext* ctx);
+static void drawBatteryDish(FContext* fctx, int height);
 static void timeChanged(struct tm* tickTime, TimeUnits unitsChanged);
+static void batteryStateChanged(BatteryChargeState charge);
 static void messageReceived(DictionaryIterator* iterator, void *context);
 
 static inline FPoint clockPoint(fixed_t radius, uint32_t angle);
@@ -191,15 +213,20 @@ static void init() {
 
     setlocale(LC_ALL, "");
 
-    /* --- Restore state from persistant storage. --- */
+    /* --- Restore state from persistent storage. --- */
 
-    g.bluetoothAlert = 1;
+    g.bluetoothAlert = BluetoothAlertVisual;
+    if (persist_exists(AppKeyBatteryIndicator)) {
+        g.batteryIndicator = persist_read_int(AppKeyBatteryIndicator);
+    } else {
+        g.batteryIndicator = BatteryIndicatorDish;
+    }
     if (persist_exists(AppKeyColorPalette)) {
-        uint8_t palette[PALETTE_SIZE];
-        int length = persist_read_data(AppKeyColorPalette, palette, PALETTE_SIZE);
+        uint8_t palette[PaletteSize];
+        int length = persist_read_data(AppKeyColorPalette, palette, PaletteSize);
         applyPalette(palette, length);
     } else {
-        applyPalette(DEFAULT_PALETTE, PALETTE_SIZE);
+        applyPalette(kDefaultPalette, PaletteSize);
     }
     if (persist_exists(AppKeyTimestamp)) {
 		g.location.timestamp = persist_read_int(AppKeyTimestamp);
@@ -237,6 +264,13 @@ static void init() {
 
     /* --- Initialize the clock state. --- */
 
+    int32_t r = BATTERY_DISH_RADIUS;
+    for (uint32_t k = 0; k < ARRAY_LENGTH(g.battery_x); ++k) {
+        int32_t y = r - k;
+        uint32_t q = usqrt(r*r - y*y);
+        g.battery_x[k] = q / (SQRT_SCALE / FIXED_POINT_SCALE);
+    }
+
 	time_t now = time(NULL);
 	g.gregorian = *localtime(&now);
 	g.size.w = INT_TO_FIXED(frame.size.w);
@@ -244,6 +278,8 @@ static void init() {
 	g.origin.x = g.size.w / 2;
 	g.origin.y = g.size.h / 2;
 	g.kilter = 0;
+
+    batteryStateChanged(battery_state_service_peek());
 
 	configureClock();
 
@@ -263,6 +299,7 @@ static void init() {
 	app_message_open(MESSAGE_BUFFER_SIZE, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 
     tick_timer_service_subscribe(MINUTE_UNIT | DAY_UNIT, &timeChanged);
+    battery_state_service_subscribe(&batteryStateChanged);
 }
 
 // --------------------------------------------------------------------------
@@ -364,32 +401,32 @@ void drawClock(Layer* layer, GContext* ctx) {
     left.x = bounds.origin.x;
     right.x = bounds.origin.x + bounds.size.w;
 
-    /* Fill the space behind. */
-    graphics_context_set_fill_color(ctx, g.colors[COLOR_BEHIND]);
+    /* Fill the space behind everything. */
+    graphics_context_set_fill_color(ctx, g.colors[PaletteColorBehind]);
     graphics_fill_rect(ctx, fill, 0, GCornerNone);
 
-	/* Fill the space above. */
+	/* Fill the space above the horizon. */
     fill.origin.y = 0;
 	fill.size.h = g.above.current;
     left.y = right.y = g.above.current - 1;
-	graphics_context_set_fill_color(ctx, g.colors[COLOR_ABOVE]);
+	graphics_context_set_fill_color(ctx, g.colors[PaletteColorAbove]);
 	graphics_fill_rect(ctx, fill, 0, GCornerNone);
-    graphics_context_set_stroke_color(ctx, g.colors[COLOR_MARKS]);
+    graphics_context_set_stroke_color(ctx, g.colors[PaletteColorMarks]);
     graphics_draw_line(ctx, left, right);
 
-	/* Fill the space below. */
+	/* Fill the space below the horizon. */
 	fill.origin.y = g.below.current;
 	fill.size.h = bounds.origin.y + bounds.size.h - fill.origin.y;
     left.y = right.y = g.below.current;
-	graphics_context_set_fill_color(ctx, g.colors[COLOR_BELOW]);
+	graphics_context_set_fill_color(ctx, g.colors[PaletteColorBelow]);
 	graphics_fill_rect(ctx, fill, 0, GCornerNone);
     graphics_draw_line(ctx, left, right);
 
 	FContext fctx;
 	fctx_init_context(&fctx, ctx);
 
-	// draw the solar orbit as a ring of dots.
-	fctx_set_fill_color(&fctx, g.colors[COLOR_MARKS]);
+	/* Draw the solar orbit markings. */
+	fctx_set_fill_color(&fctx, g.colors[PaletteColorMarks]);
 	fctx_set_color_bias(&fctx, 0);
 	fctx_begin_fill(&fctx);
 	fctx_set_text_size(&fctx, g.font, 20);
@@ -418,32 +455,53 @@ void drawClock(Layer* layer, GContext* ctx) {
 	fctx_end_fill(&fctx);
 	fctx_set_color_bias(&fctx, 0);
 
-	// draw the solar disc
+	/* Prep to draw the solar disc. */
 	uint32_t minute = g.gregorian.tm_hour * 60 + g.gregorian.tm_min;
 	FPoint sunPoint = clockPoint(ORBIT_RADIUS, minuteAngle(minute) + g.rotation.current);
 
+    /* Fill the solar disc. */
 	fctx_begin_fill(&fctx);
-	fctx_set_fill_color(&fctx, g.colors[COLOR_SOLAR]);
+	fctx_set_fill_color(&fctx, g.colors[PaletteColorSolar]);
 	fctx_set_color_bias(&fctx, -3);
-	fctx_plot_circle(&fctx, &sunPoint, SOLAR_RADIUS - SOLAR_STROKE / 2);
+	fctx_plot_circle(&fctx, &sunPoint, SOLAR_RADIUS - SOLAR_INSET / 2);
 	fctx_end_fill(&fctx);
 	fctx_set_color_bias(&fctx, 0);
 
+    /* Stroke the solar disc perimeter. */
 	fctx_begin_fill(&fctx);
-	fctx_set_fill_color(&fctx, g.colors[COLOR_MARKS]);
+	fctx_set_fill_color(&fctx, g.colors[PaletteColorMarks]);
 	fctx_plot_circle(&fctx, &sunPoint, SOLAR_RADIUS);
-	fctx_plot_circle(&fctx, &sunPoint, SOLAR_RADIUS - SOLAR_STROKE);
+	fctx_plot_circle(&fctx, &sunPoint, SOLAR_RADIUS - SOLAR_INSET);
 	fctx_end_fill(&fctx);
 
+    /* Fill the readout background. */
     fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g.colors[COLOR_MARKS]);
-    fctx_plot_circle(&fctx, &g.origin, READOUT_RADIUS);
+    fctx_set_fill_color(&fctx, g.colors[PaletteColorWithin]);
+    fctx_plot_circle(&fctx, &g.origin, READOUT_RADIUS - READOUT_INSET / 2);
     fctx_end_fill(&fctx);
 
+    /* Draw the battery state. */
+    fctx_set_rotation(&fctx, 0);
+    fctx_set_offset(&fctx, g.origin);
+    fctx_set_scale(&fctx, FPointOne, FPointOne);
+    if (g.batteryIndicator == BatteryIndicatorDish) {
+        fctx_begin_fill(&fctx);
+        fctx_set_fill_color(&fctx, g.colors[PaletteColorMarks]);
+        drawBatteryDish(&fctx, 14);
+        fctx_end_fill(&fctx);
+        fctx_begin_fill(&fctx);
+        fctx_set_fill_color(&fctx, g.colors[PaletteColorCharge]);
+        drawBatteryDish(&fctx, 2 + g.battery);
+        fctx_end_fill(&fctx);
+    }
+
+    /* Stroke around the readout perimeter. */
     fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g.colors[COLOR_WITHIN]);
-    fctx_plot_circle(&fctx, &g.origin, READOUT_RADIUS - READOUT_STROKE);
+    fctx_set_fill_color(&fctx, g.colors[PaletteColorMarks]);
+    fctx_plot_circle(&fctx, &g.origin, READOUT_RADIUS);
+    fctx_plot_circle(&fctx, &g.origin, READOUT_RADIUS - READOUT_INSET);
     fctx_end_fill(&fctx);
+
 
     if (clock_is_24h_style()) {
         /* For 24h format, use strftime, because clock_copy_string does
@@ -460,14 +518,14 @@ void drawClock(Layer* layer, GContext* ctx) {
     fctx_set_rotation(&fctx, 0);
     fctx_set_offset(&fctx, g.origin);
     fctx_set_text_size(&fctx, g.font, TIME_TEXT_SIZE);
-    fctx_set_fill_color(&fctx, g.colors[COLOR_TEXT]);
+    fctx_set_fill_color(&fctx, g.colors[PaletteColorText]);
     fctx_draw_string(&fctx, g.strbuf, g.font, GTextAlignmentCenter, FTextAnchorMiddle);
     fctx_end_fill(&fctx);
 
 	fctx_deinit_context(&fctx);
 
     // draw the date text
-    graphics_context_set_text_color(ctx, g.colors[COLOR_TEXT]);
+    graphics_context_set_text_color(ctx, g.colors[PaletteColorText]);
     GFont font = fonts_get_system_font(DATE_FONT_KEY);
     GRect box = bounds;
     int16_t midline = FIXED_TO_INT(g.origin.y);
@@ -479,6 +537,27 @@ void drawClock(Layer* layer, GContext* ctx) {
     box.origin.y = midline + WDAY_TEXT_OFFSET;
     strftime(g.strbuf, ARRAY_LENGTH(g.strbuf), WDAY_FORMAT, &g.gregorian);
     graphics_draw_text(ctx, g.strbuf, font, box, GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+
+}
+
+static inline FPoint batteryPoint(int k, fixed_t side) {
+    FPoint pt;
+    pt.x = g.battery_x[k] * side;
+    pt.y = INT_TO_FIXED(BATTERY_DISH_RADIUS - k);
+    return pt;
+}
+
+static void drawBatteryDish(FContext* fctx, int height) {
+    int top = height - 1;
+    int k = top;
+    fctx_move_to(fctx, batteryPoint(k--, -1));
+    while (k >= 0) {
+        fctx_line_to(fctx, batteryPoint(k--, -1));
+    }
+    while (k <= top) {
+        fctx_line_to(fctx, batteryPoint(k++, +1));
+    }
+    fctx_close_path(fctx);
 }
 
 // --------------------------------------------------------------------------
@@ -496,6 +575,11 @@ static void timeChanged(struct tm* gregorian, TimeUnits unitsChanged) {
     }
 }
 
+static void batteryStateChanged(BatteryChargeState charge) {
+    g.battery = (charge.charge_percent + 5) / 10;
+    layer_mark_dirty(g.layer);
+}
+
 // ---------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------
@@ -507,38 +591,42 @@ static void messageReceived(DictionaryIterator* iterator, void *context) {
 	for (tuple = dict_read_first(iterator); tuple; tuple = dict_read_next(iterator)) {
         if (AppKeyBluetoothAlert == tuple->key) {
             g.bluetoothAlert = (uint8_t)tuple->value->uint32;
-            persist_write_int(AppKeyBluetoothAlert, g.bluetoothAlert);
+            persist_write_int(tuple->key, g.bluetoothAlert);
             //bluetoothConnectionCallback(bluetooth_connection_service_peek());
+        } else if (AppKeyBatteryIndicator == tuple->key) {
+            g.batteryIndicator = (uint8_t)tuple->value->uint32;
+            persist_write_int(tuple->key, g.batteryIndicator);
+            layer_mark_dirty(g.layer);
         } else if (AppKeyColorPalette == tuple->key && TUPLE_BYTE_ARRAY == tuple->type) {
-			int length = (tuple->length < PALETTE_SIZE) ? tuple->length : PALETTE_SIZE;
+			int length = (tuple->length < PaletteSize) ? tuple->length : PaletteSize;
             persist_write_data(AppKeyColorPalette, tuple->value->data, length);
 			applyPalette(tuple->value->data, length);
 			layer_mark_dirty(g.layer);
         } else if (AppKeyTimestamp == tuple->key) {
 			got_location = true;
 			g.location.timestamp = tuple->value->int32;
-			persist_write_int(AppKeyTimestamp, g.location.timestamp);
+			persist_write_int(tuple->key, g.location.timestamp);
 		} else if (AppKeyTimezone == tuple->key) {
 			g.location.timezone = tuple->value->int32;
-			persist_write_int(AppKeyTimezone,  g.location.timezone);
+			persist_write_int(tuple->key,  g.location.timezone);
 		} else if (AppKeyLongitude == tuple->key) {
 			g.location.longitude = tuple->value->int32;
-			persist_write_int(AppKeyLongitude, g.location.longitude);
+			persist_write_int(tuple->key, g.location.longitude);
 		} else if (AppKeyLatitude == tuple->key) {
 			g.location.latitude = tuple->value->int32;
-			persist_write_int(AppKeyLatitude,  g.location.latitude);
+			persist_write_int(tuple->key,  g.location.latitude);
 		} else if (AppKeySunrise == tuple->key) {
 			g.location.sunrise = tuple->value->int32;
-			persist_write_int(AppKeySunrise,   g.location.sunrise);
+			persist_write_int(tuple->key,   g.location.sunrise);
 		} else if (AppKeySunset == tuple->key) {
 			g.location.sunset = tuple->value->int32;
-			persist_write_int(AppKeySunset,    g.location.sunset);
+			persist_write_int(tuple->key,    g.location.sunset);
 		} else if (AppKeySunSouth == tuple->key) {
 			g.location.sunsouth = tuple->value->int32;
-			persist_write_int(AppKeySunSouth,  g.location.sunsouth);
+			persist_write_int(tuple->key,  g.location.sunsouth);
 		} else if (AppKeySunStatus == tuple->key) {
 			g.location.sunstat = tuple->value->int32;
-			persist_write_int(AppKeySunStatus, g.location.sunstat);
+			persist_write_int(tuple->key, g.location.sunstat);
 		}
 	}
 
@@ -576,8 +664,12 @@ static inline GColor colorFromConfig(uint8_t cc) {
 }
 
 static void applyPalette(const uint8_t* palette, int16_t length) {
-    for (int k = 0; k < length; ++k) {
+    int k;
+    for (k = 0; k < length; ++k) {
         g.colors[k] = colorFromConfig(palette[k]);
+    }
+    for (; k < PaletteSize; ++k) {
+        g.colors[k] = colorFromConfig(kDefaultPalette[k]);
     }
 }
 
