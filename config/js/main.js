@@ -76,7 +76,7 @@ function rgbaColorFromHex(hexColor, alpha) {
 $().ready(function () {
     'use strict';
     var platform = getQueryParam('platform', 'aplite'),
-        version = getQueryParam('version', '1.4'),
+        version = getQueryParam('version', '1.6'),
         returnTo = getQueryParam('return_to', 'pebblejs://close#'),
         palettePreview = $('.preview'),
         palettes = {
@@ -90,12 +90,12 @@ $().ready(function () {
 
     $('#battery-toggle').on('change', function (event) {
         console.log('alert change: ' + $(event.target).attr('checked'));
-        
+
         var battery = $(event.target).attr('checked');
         $('#battery-preview').css('display', battery ? 'block' : 'none');
     }).change();
-    
-    
+
+
     $('#palette-preset').on('change', function (event) {
         console.log('palette preset on change: ' + $(event.target).val());
 
