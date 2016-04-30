@@ -1,12 +1,5 @@
 {
   "name": "horizon-config",
-  "version": "1.2.0",
-  "authors": [
-    "JR Mobley <jr@pobox.com>"
-  ],
-  "description": "Configuration page for Horizon watch face for Pebble smartwatch.",
-  "main": "index.html",
-  "license": "ISC",
   "ignore": [
     "**/.*",
     "node_modules",
