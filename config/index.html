@@ -18,14 +18,14 @@
             Options
         </div>
         <div class='item-container-content'>
-            <!-- label class='item'>
+            <label class='item'>
                 Disconnect Alert
                 <select class='item-select' id='bluetooth-select' dir='rtl'>
                     <option value='0'>None</option>
                     <option value='1'>Visual</option>
                     <option value='2'>Visual + Vibration</option>
                 </select>
-            </label -->
+            </label>
             <label class='item'>
                 Battery Indicator
                 <input type='checkbox' class='item-toggle' id='battery-toggle'>
@@ -51,11 +51,11 @@
                         </g>
                         <path id='battery-dish' stroke-width='2' d="M-36.3318,49 A61,61 0 0,0 36.3318,49 Z"/>
                     </defs>
-                    
+
                     <circle class='color-behind' stroke='none'         fill='currentColor' r='90' />
                     <path   class='color-above'  stroke='currentColor' fill='none'         stroke-width='28' d='M-76,0 A76,76 0 0,1 76,0' />
                     <path   class='color-below'  stroke='currentColor' fill='none'         stroke-width='28' d='M-76,0 A76,76 0 0,0 76,0' />
-                    
+
                     <use    class='color-marks'                                            transform='rotate(  0 0 0)' xlink:href='#quarter-day' />
                     <use    class='color-marks'                                            transform='rotate( 90 0 0)' xlink:href='#quarter-day' />
                     <use    class='color-marks'                                            transform='rotate(180 0 0)' xlink:href='#quarter-day' />
@@ -70,12 +70,12 @@
                     <text   class='color-text'   stroke='none'         fill='currentColor' alignment-baseline='central' text-anchor='middle' font-size='36'>
                         time
                     </text>
-                    
+
                     <g id='battery-preview'>
                     <use    class='color-charge' stroke='none'         fill='currentColor' xlink:href='#battery-dish' />
                     <use    class='color-marks'  stroke='currentColor' fill='none'         xlink:href='#battery-dish' />
                     </g>
-                    
+
                 </svg>
             </div>
         </div>

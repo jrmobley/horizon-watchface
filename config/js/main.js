@@ -76,7 +76,7 @@ function rgbaColorFromHex(hexColor, alpha) {
 $().ready(function () {
     'use strict';
     var platform = getQueryParam('platform', 'aplite'),
-        version = getQueryParam('version', '1.6'),
+        version = getQueryParam('version', '1.7'),
         returnTo = getQueryParam('return_to', 'pebblejs://close#'),
         palettePreview = $('.preview'),
         palettes = {

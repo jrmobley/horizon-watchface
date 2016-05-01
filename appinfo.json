@@ -3,7 +3,7 @@
   "shortName": "Horizon",
   "longName": "Horizon",
   "companyName": "JR Mobley",
-  "versionLabel": "1.6",
+  "versionLabel": "1.7",
   "sdkVersion": "3",
   "targetPlatforms": ["aplite", "basalt", "chalk"],
   "capabilities": ["configurable", "location"],
