@@ -5,3 +5,5 @@ build
 # Ignore waf lock file
 .lock-waf*
 .idea
+
+node_modules/
