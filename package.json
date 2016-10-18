@@ -1,66 +1,72 @@
 {
-    "name": "Horizon",
-    "version": "2.0.0",
-    "author": "JR Mobley",
-    "private": true,
-    "dependencies": {
-        "pebble-clay": "^1.0.2",
-        "pebble-fctx": "^1.2.0"
+  "name": "Horizon",
+  "version": "2.0.0",
+  "author": "JR Mobley",
+  "private": true,
+  "dependencies": {
+    "pebble-clay": "^1.0.2",
+    "pebble-fctx": "^1.6.0",
+    "pebble-utf8": "^1.0.0",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {
+    "pebble-fctx-compiler": "1.2.0"
+  },
+  "keywords": [
+    "pebble-app"
+  ],
+  "pebble": {
+    "sdkVersion": "3",
+    "resources": {
+      "media": [
+        {
+          "menuIcon": true,
+          "type": "png",
+          "name": "MENU_ICON",
+          "file": "icon.png"
+        },
+        {
+          "type": "raw",
+          "name": "DIN_CONDENSED_FFONT",
+          "file": "din-condensed.ffont"
+        }
+      ]
     },
-    "devDependencies": {
-        "pebble-fctx-compiler": "^1.0.0"
-    },
-    "keywords": [
-        "pebble-app"
+    "projectType": "native",
+    "uuid": "7433da26-1d52-4597-81c8-439cce21ecf7",
+    "messageKeys": [
+      "DATEFONT",
+      "BATTERY",
+      "BLUETOOTH",
+      "PALETTE",
+      "COLORS[12]",
+      "TIMESTAMP",
+      "LONGITUDE",
+      "SUNSET",
+      "LOCATION",
+      "SUNSOUTH",
+      "LATITUDE",
+      "TIMEZONE",
+      "SUNSTAT",
+      "SUNRISE"
     ],
-    "pebble": {
-        "sdkVersion": "3",
-        "resources": {
-            "media": [
-                {
-                    "menuIcon": true,
-                    "type": "png",
-                    "name": "MENU_ICON",
-                    "file": "icon.png"
-                },
-                {
-                    "type": "raw",
-                    "name": "DIN_CONDENSED_FFONT",
-                    "file": "din-condensed.ffont"
-                }
-            ]
-        },
-        "projectType": "native",
-        "uuid": "7433da26-1d52-4597-81c8-439cce21ecf7",
-        "messageKeys": [
-            "PALETTE",
-            "BATTERY",
-            "TIMESTAMP",
-            "LONGITUDE",
-            "BLUETOOTH",
-            "SUNSET",
-            "LOCATION",
-            "SUNSOUTH",
-            "LATITUDE",
-            "TIMEZONE",
-            "SUNSTAT",
-            "SUNRISE"
-        ],
-        "enableMultiJS": true,
-        "displayName": "Horizon",
-        "watchapp": {
-            "onlyShownOnCommunication": false,
-            "hiddenApp": false,
-            "watchface": true
-        },
-        "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk"
-        ],
-        "capabilities": [
-            "configurable",
-            "location"
-        ]
-    }
+    "enableMultiJS": true,
+    "displayName": "Horizon",
+    "watchapp": {
+      "onlyShownOnCommunication": false,
+      "hiddenApp": false,
+      "watchface": true
+    },
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite",
+      "emery"
+    ],
+    "capabilities": [
+      "configurable",
+      "location"
+    ]
+  }
 }
