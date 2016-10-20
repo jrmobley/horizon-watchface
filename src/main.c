@@ -172,7 +172,7 @@ struct Clock {
 
     // configuration
     uint8_t bluetoothAlert;
-    uint8_t batteryIndicator;
+    bool batteryIndicator;
     GColor colors[PaletteSize];
 
     // external state
@@ -607,46 +607,51 @@ void drawClock(Layer* layer, GContext* ctx) {
     fctx_plot_circle(&fctx, &fcenter, g.readoutDiscRadius - g.strokeWidth / 2);
     fctx_end_fill(&fctx);
 
-    /* Draw the bluetooth state. */
     fctx_set_rotation(&fctx, 0);
     fctx_set_offset(&fctx, fcenter);
-    fctx_set_scale(&fctx, FPoint(1,1), FPoint(1,-1));
 
-    fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g.colors[PaletteColorEngraving]);
-    drawBatteryDish(&fctx, 13);
-    fctx_end_fill(&fctx);
-    fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g.colors[g.bluetooth ? PaletteColorOnline : PaletteColorOffline]);
-    drawBatteryDish(&fctx, 12);
-    fctx_end_fill(&fctx);
+    /* Draw the bluetooth state. */
+    if (g.bluetoothAlert > 0) {
+        fctx_set_scale(&fctx, FPoint(1,1), FPoint(1,-1));
 
-    if (!g.bluetooth) {
-        GRect box;
-        box.origin.x = center.x - 6;
-        box.origin.y = center.y - FIXED_TO_INT(g.readoutDiscRadius) + 6;
-        box.size.w = 12;
-        box.size.h = 3;
-        graphics_context_set_fill_color(fctx.gctx, g.colors[PaletteColorWithin]);
-        graphics_fill_rect(fctx.gctx, box, 0, 0);
+        fctx_begin_fill(&fctx);
+        fctx_set_fill_color(&fctx, g.colors[PaletteColorEngraving]);
+        drawBatteryDish(&fctx, 13);
+        fctx_end_fill(&fctx);
+        fctx_begin_fill(&fctx);
+        fctx_set_fill_color(&fctx, g.colors[g.bluetooth ? PaletteColorOnline : PaletteColorOffline]);
+        drawBatteryDish(&fctx, 12);
+        fctx_end_fill(&fctx);
+
+        if (!g.bluetooth) {
+            GRect box;
+            box.origin.x = center.x - 6;
+            box.origin.y = center.y - FIXED_TO_INT(g.readoutDiscRadius) + 6;
+            box.size.w = 12;
+            box.size.h = 3;
+            graphics_context_set_fill_color(fctx.gctx, g.colors[PaletteColorWithin]);
+            graphics_fill_rect(fctx.gctx, box, 0, 0);
+        }
     }
 
     /* Draw the battery state. */
-    fctx_set_scale(&fctx, FPointOne, FPointOne);
-    fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g.colors[PaletteColorEngraving]);
-    drawBatteryDish(&fctx, 13);
-    fctx_end_fill(&fctx);
-    if (g.battery < 10) {
+    if (g.batteryIndicator) {
+        fctx_set_scale(&fctx, FPointOne, FPointOne);
         fctx_begin_fill(&fctx);
-        fctx_set_fill_color(&fctx, g.colors[PaletteColorCapacity]);
-        drawBatteryDish(&fctx, 12);
+        fctx_set_fill_color(&fctx, g.colors[PaletteColorEngraving]);
+        drawBatteryDish(&fctx, 13);
+        fctx_end_fill(&fctx);
+        if (g.battery < 10) {
+            fctx_begin_fill(&fctx);
+            fctx_set_fill_color(&fctx, g.colors[PaletteColorCapacity]);
+            drawBatteryDish(&fctx, 12);
+            fctx_end_fill(&fctx);
+        }
+        fctx_begin_fill(&fctx);
+        fctx_set_fill_color(&fctx, g.colors[PaletteColorCharge]);
+        drawBatteryDish(&fctx, 2 + g.battery);
         fctx_end_fill(&fctx);
     }
-    fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g.colors[PaletteColorCharge]);
-    drawBatteryDish(&fctx, 2 + g.battery);
-    fctx_end_fill(&fctx);
 
     /* Stroke around the readout perimeter. */
     fctx_begin_fill(&fctx);
@@ -756,6 +761,20 @@ static void messageReceived(DictionaryIterator* received, void* context) {
     if (tuple) {
         persist_write_int(PersistKeyDateFont, tuple->value->int32);
         applyDateFont(tuple->value->int32);
+        layer_mark_dirty(g.layer);
+    }
+
+    tuple = dict_find(received, MESSAGE_KEY_BATTERY);
+    if (tuple) {
+        g.batteryIndicator = tuple->value->int16 != 0;
+        persist_write_bool(PersistKeyBattery, g.batteryIndicator);
+        layer_mark_dirty(g.layer);
+    }
+
+    tuple = dict_find(received, MESSAGE_KEY_BLUETOOTH);
+    if (tuple) {
+        g.bluetoothAlert = tuple->value->int32;
+        persist_write_int(PersistKeyBattery, g.bluetoothAlert);
         layer_mark_dirty(g.layer);
     }
 

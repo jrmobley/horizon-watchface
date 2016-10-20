@@ -103,7 +103,8 @@ function locationOverride(locopts) {
 
 Pebble.addEventListener('ready', function () {
     'use strict';
-    var locopts = loadObject('location'),
+
+    var locopts = retrieveObject('location', null),
         pos = locationOverride(locopts);
     if (pos) {
         sendLocation(pos);
@@ -142,7 +143,7 @@ Pebble.addEventListener("webviewclosed", function (e) {
     //console.log('dict: ' + JSON.stringify(dict, null, 2));
     //console.log('locopts: ' + JSON.stringify(locopts, null, 2));
 
-    saveObject('location', locopts);
+    storeObject('location', locopts);
     var locpos = locationOverride(locopts);
     if (locpos) {
         var locmsg = locationMessage(locpos);
@@ -175,11 +176,11 @@ Pebble.addEventListener("webviewclosed", function (e) {
 // Local Storage
 // ---------------------------------------------------------------------------
 
-function saveObject(name, value) {
+function storeObject(name, value) {
     window.localStorage.setItem(name, JSON.stringify(value));
 }
 
-function loadObject(name, defaultValue) {
+function retrieveObject(name, defaultValue) {
     var encodedValue = window.localStorage.getItem(name),
         value;
     if (encodedValue) {

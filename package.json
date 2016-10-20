@@ -4,13 +4,13 @@
   "author": "JR Mobley",
   "private": true,
   "dependencies": {
-    "pebble-clay": "^1.0.2",
-    "pebble-fctx": "^1.6.0",
-    "pebble-utf8": "^1.0.0",
+    "pebble-clay": "^1.0.3",
+    "pebble-fctx": "^1.6.1",
+    "pebble-utf8": "^1.0.1",
     "underscore": "^1.8.3"
   },
   "devDependencies": {
-    "pebble-fctx-compiler": "1.2.0"
+    "pebble-fctx-compiler": "^1.2.1"
   },
   "keywords": [
     "pebble-app"
