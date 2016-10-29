@@ -13,6 +13,7 @@
 // constants
 // --------------------------------------------------------------------------
 
+#define SCREENSHOT 0
 #define MESSAGE_BUFFER_SIZE 200
 #define CLOCK_ANIM_DURATION 1000
 const char* kDateFormat = "%b %d";
@@ -23,7 +24,8 @@ const char* kWeekdayFormat = "%a";
 // --------------------------------------------------------------------------
 
 typedef enum PersistKeys {
-    PersistKeyLocation = 100,
+    PersistKeyVersion,
+    PersistKeyLocation,
     PersistKeyLongitude,
     PersistKeyLatitude,
     PersistKeyTimezone,
@@ -35,7 +37,6 @@ typedef enum PersistKeys {
     PersistKeyBluetooth,
     PersistKeyBattery,
     PersistKeyPalette,
-    PersistKeyDateFont,
 } PersistKeys;
 
 enum Palette {
@@ -165,8 +166,6 @@ struct Clock {
     int16_t hourCapHeight;
     int16_t timeCapHeight;
     int16_t dateCapHeight;
-    SystemFont* gothicRegular;
-    SystemFont* gothicBold;
     SystemFont* dateFont;
     fixed_t battery_x[14];
 
@@ -214,7 +213,6 @@ static void messageReceived(DictionaryIterator* iterator, void *context);
 static FPoint clockPoint(FPoint center, fixed_t radius, uint32_t angle);
 static GColor colorFromConfig(uint8_t cc);
 static void applyPalette(const uint8_t* palette, int16_t length);
-static void applyDateFont(int32_t dateFont);
 
 static void logLocationFix(LocationFix* loc);
 
@@ -262,11 +260,14 @@ static void init() {
 
     /* --- Restore state from persistent storage. --- */
 
-    int32_t dateFont = PBL_IF_BW_ELSE(1, 0);
-    if (persist_exists(PersistKeyDateFont)) {
-        dateFont = persist_read_int(PersistKeyDateFont);
+    int version = persist_read_int(PersistKeyVersion);
+    if (version < 1) {
+        /* remove persistent data from old install */
+        for (uint32_t key = 100; key < 113; ++key) {
+            persist_delete(key);
+        }
+        persist_write_int(PersistKeyVersion, 1);
     }
-    /* applyDateFont after the font sizes are selected below. */
 
     if (persist_exists(PersistKeyBattery)) {
         g.batteryIndicator = persist_read_bool(PersistKeyBattery);
@@ -320,33 +321,20 @@ static void init() {
 
     /* --- Calculate layout. --- */
 
-    int16_t designRadius = sizeInner(frame.size) / 2 - PBL_IF_ROUND_ELSE(4, 0);
-    g.sunDiscRadius = designRadius * 3 / 25;
-    g.hourCapHeight = g.sunDiscRadius * 25 / 17;
-    int16_t sunDiscMargin = g.sunDiscRadius * 1 / 3;
-    g.sunOrbitRadius = designRadius - sunDiscMargin - g.sunDiscRadius;
-    g.readoutDiscRadius = g.sunOrbitRadius - g.sunDiscRadius - sunDiscMargin;
-    g.timeCapHeight = (g.readoutDiscRadius * 10 / 21) / 2 * 2;
-    g.dateCapHeight = g.readoutDiscRadius * 3 / 11;
-    g.dateTextGap = g.readoutDiscRadius * 4 / 50;
+    int16_t designRadius = sizeInner(frame.size) / 2 - PBL_IF_ROUND_ELSE(4, 0);       // 72
+    g.sunDiscRadius = designRadius * 3 / 25;                                          // 8
+    g.hourCapHeight = g.sunDiscRadius * 25 / 17;                                      // 11
+    int16_t sunDiscMargin = g.sunDiscRadius * 1 / 3;                                  // 2
+    g.sunOrbitRadius = designRadius - sunDiscMargin - g.sunDiscRadius;                // 62
+    g.readoutDiscRadius = g.sunOrbitRadius - g.sunDiscRadius - sunDiscMargin;         // 52
+    g.timeCapHeight = (g.readoutDiscRadius * 10 / 21) / 2 * 2;                        // 24
+    g.dateCapHeight = g.readoutDiscRadius * 3 / 11;                                   // 14
+    g.dateTextGap = g.readoutDiscRadius * 4 / 50;                                     // 4
     g.strokeWidth = 2;
 
-    /* KOJAK TODO : Return to a calculated dateCapHeight.
-       Then choose the next smaller system gothic.
-       The two fonts will not be the same height.  But that is okay
-       because they aren't the same width at all anyway. */
-
-#if defined(PBL_PLATFORM_EMERY)
-    g.gothicRegular = &Gothic28;
-    g.gothicBold = &Gothic28Bold;
-#elif defined(PBL_PLATFORM_CHALK)
-    g.gothicRegular = &Gothic24;
-    g.gothicBold = &Gothic24Bold;
-#else
-    g.gothicRegular = &Gothic18;
-    g.gothicBold = &Gothic18Bold;
+#if defined(PBL_BW)
+    g.dateFont = &Gothic18Bold;
 #endif
-    applyDateFont(dateFont);
 
     int32_t r = g.readoutDiscRadius - g.strokeWidth / 2;
     for (uint32_t k = 0; k < ARRAY_LENGTH(g.battery_x); ++k) {
@@ -519,6 +507,12 @@ void formatTime() {
 
 void drawClock(Layer* layer, GContext* ctx) {
 
+#if SCREENSHOT
+    g.gregorian.tm_hour = 13;
+    g.gregorian.tm_min = 30;
+    g.battery = 10;
+#endif
+
     GRect bounds = layer_get_unobstructed_bounds(layer);
     GPoint center = grect_center_point(&bounds);
     FPoint fcenter = g2fpoint(center);
@@ -553,34 +547,33 @@ void drawClock(Layer* layer, GContext* ctx) {
     fctx_init_context(&fctx, ctx);
 
     /* Draw the solar orbit markings. */
+    fctx_begin_fill(&fctx);
     fctx_set_fill_color(&fctx, g.colors[PaletteColorMarks]);
     fctx_set_color_bias(&fctx, 0);
-    fctx_begin_fill(&fctx);
-    fctx_set_text_cap_height(&fctx, g.font, PBL_IF_COLOR_ELSE(g.hourCapHeight, FIXED_TO_INT(g.sunDiscRadius)*2));
-    fctx_set_rotation(&fctx, g.rotation.current);
     for (int h = 0; h < 24; ++h) {
         FPoint c = clockPoint(fcenter, g.sunOrbitRadius, hourAngle(h) + g.rotation.current);
-
         if (h % 6) {
             fctx_plot_circle(&fctx, &c, g.hourPipRadius);
-        } else {
 #ifdef PBL_COLOR
+        } else {
             fctx_plot_circle(&fctx, &c, g.sunDiscRadius);
 #endif
-            fctx_set_offset(&fctx, c);
-            if (h == 0) {
-                fctx_draw_string(&fctx, "00", g.font, GTextAlignmentCenter, FTextAnchorMiddle);
-            } else if (h == 6) {
-                fctx_draw_string(&fctx, "06", g.font, GTextAlignmentCenter, FTextAnchorMiddle);
-            } else if (h == 12) {
-                fctx_draw_string(&fctx, "12", g.font, GTextAlignmentCenter, FTextAnchorMiddle);
-            } else if (h == 18) {
-                fctx_draw_string(&fctx, "18", g.font, GTextAlignmentCenter, FTextAnchorMiddle);
-            }
         }
     }
     fctx_end_fill(&fctx);
     fctx_set_color_bias(&fctx, 0);
+
+    fctx_begin_fill(&fctx);
+    fctx_set_fill_color(&fctx, g.colors[PBL_IF_COLOR_ELSE(PaletteColorSolar, PaletteColorMarks)]);
+    fctx_set_text_cap_height(&fctx, g.font, PBL_IF_COLOR_ELSE(g.hourCapHeight, FIXED_TO_INT(g.sunDiscRadius)*2));
+    fctx_set_rotation(&fctx, g.rotation.current);
+    for (int h = 0; h < 24; h += 6) {
+        FPoint c = clockPoint(fcenter, g.sunOrbitRadius, hourAngle(h) + g.rotation.current);
+        fctx_set_offset(&fctx, c);
+        snprintf(g.strbuf, ARRAY_LENGTH(g.strbuf), "%02d", h);
+        fctx_draw_string(&fctx, g.strbuf, g.font, GTextAlignmentCenter, FTextAnchorMiddle);
+    }
+    fctx_end_fill(&fctx);
 
     /* Prep to draw the solar disc. */
     uint32_t minute = g.gregorian.tm_hour * 60 + g.gregorian.tm_min;
@@ -757,13 +750,6 @@ static void messageReceived(DictionaryIterator* received, void* context) {
 
     Tuple* tuple;
 
-    tuple = dict_find(received, MESSAGE_KEY_DATEFONT);
-    if (tuple) {
-        persist_write_int(PersistKeyDateFont, tuple->value->int32);
-        applyDateFont(tuple->value->int32);
-        layer_mark_dirty(g.layer);
-    }
-
     tuple = dict_find(received, MESSAGE_KEY_BATTERY);
     if (tuple) {
         g.batteryIndicator = tuple->value->int16 != 0;
@@ -871,16 +857,6 @@ static void applyPalette(const uint8_t* palette, int16_t length) {
     }
     for (; k < PaletteSize; ++k) {
         g.colors[k] = colorFromConfig(kDefaultPalette[k]);
-    }
-}
-
-static void applyDateFont(int32_t dateFont) {
-    if (dateFont == 1) {
-        g.dateFont = g.gothicRegular;
-    } else if (dateFont == 2) {
-        g.dateFont = g.gothicBold;
-    } else {
-        g.dateFont = NULL;
     }
 }
 

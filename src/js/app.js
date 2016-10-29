@@ -13,16 +13,21 @@
 
 var _ = require('underscore');
 var sunriset = require('./sunriset.js');
+var colors = require('./colors.js');
 var keys = require('message_keys');
 var Clay = require('pebble-clay');
 var clayConfig = require('./config.js');
-var customClay = require('./custom-clay.js');
-var colors = require('./colors.js');
-var palettes = colors.palettesAsHexStrings();
-var clay = new Clay(clayConfig, customClay, {
-     autoHandleEvents: false,
-     userData: palettes
-});
+var clayCustomFunc = require('./custom-clay.js');
+var Preview = require('pebble-clay-preview-component');
+var previewComponent = new Preview(require('raw!./preview.svg'), require('raw!./preview.css')); 
+
+/* load custom presets from localStorage */
+var customColorPresets = retrieveObject('custom-colors');
+
+/* update clayConfig with custom presets */
+
+var clay = new Clay(clayConfig, clayCustomFunc, { autoHandleEvents: false });
+clay.registerComponent(previewComponent);
 
 function locationMessage(pos) {
     'use strict';
@@ -124,10 +129,8 @@ Pebble.addEventListener("webviewclosed", function (e) {
 
     var k,
         dict = clay.getSettings(e.response),
-        paletteName = dict[keys.PALETTE],
-        paletteColors = palettes[paletteName],
+        userData = clay.getUserData(e.response),
         message = {
-            'DATEFONT': parseInt(dict[keys.DATEFONT], 10),
             'BLUETOOTH': parseInt(dict[keys.BLUETOOTH], 10),
             'BATTERY': !!dict[keys.BATTERY],
             'PALETTE': []
@@ -142,6 +145,7 @@ Pebble.addEventListener("webviewclosed", function (e) {
     //console.log('keys: ' + JSON.stringify(keys, null, 2));
     //console.log('dict: ' + JSON.stringify(dict, null, 2));
     //console.log('locopts: ' + JSON.stringify(locopts, null, 2));
+    console.log('userData: ' + JSON.stringify(userData, null, 2));
 
     storeObject('location', locopts);
     var locpos = locationOverride(locopts);
@@ -152,14 +156,8 @@ Pebble.addEventListener("webviewclosed", function (e) {
         locationRequest();
     }
 
-    if (paletteColors) {
-        for (k = 0; k < 12; ++k) {
-            message.PALETTE.push(colors.eightBitColorFromHex(paletteColors[k]));
-        }
-    } else {
-        for (k = 0; k < 12; ++k) {
-            message.PALETTE.push(colors.eightBitColorFromInt(dict[keys.COLORS + k]));
-        }
+    for (k = 0; k < 12; ++k) {
+        message.PALETTE.push(colors.eightBitColorFromInt(dict[keys.COLORS + k]));
     }
 
     console.log(JSON.stringify(message, null, 2));

@@ -57,29 +57,6 @@ module.exports = {
         'use strict';
         var integerColor = parseInt(hexColor.substr(-6), 16);
         return this.eightBitColorFromInt(integerColor);
-    },
-
-    palettesAsHexStrings : function () {
-
-        var self = this,
-            hexpal = {};
-
-        function getHexColor(colorName) {
-            return self.hexColorFromName(colorName);
-        }
-        for (var paletteName in self.palettes) {
-            if (self.palettes.hasOwnProperty(paletteName)) {
-                hexpal[paletteName] = self.palettes[paletteName].map(getHexColor);
-            }
-        }
-        return hexpal;
-    },
-
-    palettes: {
-        //         Behind       Below         Above       Within   Marks    Engraving    Text     Solar    Capacity    Charge         Online           Offline
-        'color': [ 'LightGray', 'PictonBlue', 'Icterine', 'White', 'Black', 'LightGray', 'Black', 'White', 'DarkGray', 'White',       'White',         'DarkGray' ],
-        'morec': [ 'LightGray', 'PictonBlue', 'Icterine', 'White', 'Black', 'LightGray', 'Black', 'White', 'DarkGray', 'BrightGreen', 'VividCerulean', 'DarkCandyAppleRed' ],
-        'white': [ 'LightGray', 'White',      'White',    'White', 'Black', 'LightGray', 'Black', 'White', 'Black',    'White',       'White',         'Black' ],
-        'black': [ 'LightGray', 'Black',      'Black',    'Black', 'White', 'DarkGray',  'White', 'Black', 'White',    'Black',       'Black',         'White' ]
     }
+
 };

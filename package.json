@@ -4,13 +4,15 @@
   "author": "JR Mobley",
   "private": true,
   "dependencies": {
-    "pebble-clay": "^1.0.3",
+    "pebble-clay": "../pebble-clay",
+    "pebble-clay-preview-component": "^0.0.1",
     "pebble-fctx": "^1.6.1",
     "pebble-utf8": "^1.0.1",
     "underscore": "^1.8.3"
   },
   "devDependencies": {
-    "pebble-fctx-compiler": "^1.2.1"
+    "pebble-fctx-compiler": "^1.2.1",
+    "raw-loader": "^0.5.1"
   },
   "keywords": [
     "pebble-app"
@@ -35,7 +37,6 @@
     "projectType": "native",
     "uuid": "7433da26-1d52-4597-81c8-439cce21ecf7",
     "messageKeys": [
-      "DATEFONT",
       "BATTERY",
       "BLUETOOTH",
       "PALETTE",
