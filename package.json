@@ -4,7 +4,7 @@
   "author": "JR Mobley",
   "private": true,
   "dependencies": {
-    "pebble-clay": "../pebble-clay",
+    "pebble-clay": "jrmobley/clay#dist",
     "pebble-clay-preview-component": "^0.0.1",
     "pebble-fctx": "^1.6.1",
     "pebble-utf8": "^1.0.1",
