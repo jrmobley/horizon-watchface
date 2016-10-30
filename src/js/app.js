@@ -136,10 +136,10 @@ Pebble.addEventListener("webviewclosed", function (e) {
             'PALETTE': []
         },
         locopts = {
-            automatic: !!dict[keys.LOCATION],
+            automatic: true /* !!dict[keys.LOCATION],
             latitude: dict[keys.LATITUDE],
             longitude: dict[keys.LONGITUDE],
-            timezone: dict[keys.TIMEZONE]
+            timezone: dict[keys.TIMEZONE] */
         };
 
     //console.log('keys: ' + JSON.stringify(keys, null, 2));

@@ -4,6 +4,7 @@ module.exports = function (minified) {
         $ = minified.$,
         HTML = minified.HTML;
 
+    /*
     function handleLocationChange() {
         var location = this.get(),
             latitudeInput = clayConfig.getItemByMessageKey('LATITUDE'),
@@ -20,6 +21,7 @@ module.exports = function (minified) {
             timezoneInput.show();
         }
     }
+    */
 
     var colorNames = [
       'Black', 'OxfordBlue', 'DukeBlue', 'Blue',
@@ -96,10 +98,12 @@ module.exports = function (minified) {
     clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function() {
 
         /* Attach change handler to location select. */
+        /*
         var locationSelector = clayConfig.getItemByMessageKey('LOCATION');
         handleLocationChange.call(locationSelector);
         locationSelector.on('change', handleLocationChange);
-
+        */
+        
         /* Attach change handler to palette select. */
         var paletteSelector = clayConfig.getItemByMessageKey('PALETTE');
         handlePaletteChange.call(paletteSelector);

@@ -62,8 +62,12 @@
             <circle cx='0' cy='62' r='2' transform='rotate(60 0 0)' />
             <circle cx='0' cy='62' r='2' transform='rotate(75 0 0)' />
         </g>
+
         <!-- r = 52-1 = 51,  y = r-13 = 38,  x = sqrt(r^2 - y^2) = 34.015 -->
-        <path id='battery-dish' stroke-width='1' d="M-34.015,38 A51,51 0 0,0 34.015,38 Z"/>
+        <path id='battery-dish-100' stroke-width='1' d="M-34.015,38 A51,51 0 0,0 34.015,38 Z"/>
+
+        <!-- r = 52-1 = 51,  y = r-7 = 44,  x = sqrt(r^2 - y^2) = 25.788 -->
+        <path id='battery-dish-40' stroke-width='1' d="M-25.788,44 A51,51 0 0,0 25.788,44 Z"/>
     </defs>
 
     <!-- dummy target for get/set -->
@@ -133,23 +137,24 @@
 
     <g id='bluetooth-preview' transform='scale(1, -1)'>
         <g id='bluetooth-online'>
-            <use class='color-online' stroke='none' fill='currentColor' xlink:href='#battery-dish' />
+            <use class='color-online' stroke='none' fill='currentColor' xlink:href='#battery-dish-100' />
         </g>
         <g id='bluetooth-offline'>
-            <use class='color-offline' stroke='none' fill='currentColor' xlink:href='#battery-dish' />
+            <use class='color-offline' stroke='none' fill='currentColor' xlink:href='#battery-dish-100' />
             <rect class='color-within' stroke='none' fill='currentColor' x='-6' y='43' width='12' height='3' />
         </g>
-        <use class='color-engrave' stroke='currentColor' fill='none' xlink:href='#battery-dish' />
+        <use class='color-engrave' stroke='currentColor' fill='none' xlink:href='#battery-dish-100' />
     </g>
 
     <g id='battery-preview'>
         <g id='battery-full'>
-            <use class='color-charge' stroke='none' fill='currentColor' xlink:href='#battery-dish' />
+            <use class='color-charge' stroke='none' fill='currentColor' xlink:href='#battery-dish-100' />
         </g>
         <g id='battery-low'>
-            <use class='color-capacity' stroke='none' fill='currentColor' xlink:href='#battery-dish' />
+            <use class='color-capacity' stroke='none' fill='currentColor' xlink:href='#battery-dish-100' />
+            <use class='color-charge' stroke='none' fill='currentColor' xlink:href='#battery-dish-40'>
         </g>
-        <use class='color-engrave' stroke='currentColor' fill='none' xlink:href='#battery-dish' />
+        <use class='color-engrave' stroke='currentColor' fill='none' xlink:href='#battery-dish-100' />
     </g>
 
     <!-- stroke around readout disc -->

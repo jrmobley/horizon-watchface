@@ -27,7 +27,7 @@ module.exports = [
                 label: 'Battery Status',
                 defaultValue: true
             },
-            {
+            /*{
                 type: 'toggle',
                 messageKey: 'LOCATION',
                 label: 'Automatic Location',
@@ -53,7 +53,7 @@ module.exports = [
                 label: 'Time Zone',
                 description: 'Minutes from UTC',
                 defaultValue: 120
-            }
+            }*/
         ]
     },
     {
@@ -128,10 +128,11 @@ module.exports = [
     },
     {
         type: 'section',
-        "items": [
+        capabilities: ['COLOR'],
+        items: [
             {
-                "type": "heading",
-                "defaultValue": "Preview"
+                type: 'heading',
+                defaultValue: 'Preview'
             },
             {
                 type: 'preview',
