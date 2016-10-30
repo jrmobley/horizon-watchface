@@ -21,11 +21,6 @@ var clayCustomFunc = require('./custom-clay.js');
 var Preview = require('pebble-clay-preview-component');
 var previewComponent = new Preview(require('raw!./preview.svg'), require('raw!./preview.css')); 
 
-/* load custom presets from localStorage */
-var customColorPresets = retrieveObject('custom-colors');
-
-/* update clayConfig with custom presets */
-
 var clay = new Clay(clayConfig, clayCustomFunc, { autoHandleEvents: false });
 clay.registerComponent(previewComponent);
 
@@ -102,6 +97,57 @@ function locationOverride(locopts) {
     return null;
 }
 
+/**
+ * Scan over the config and run the callback if the testFn resolves to true
+ * @private
+ * @param {Clay~ConfigItem|Array} item
+ * @param {_scanConfig_testFn} testFn
+ * @param {_scanConfig_callback} callback
+ * @return {void}
+ */
+function _scanConfig(item, testFn, callback) {
+    if (Array.isArray(item)) {
+        item.forEach(function (item) {
+            _scanConfig(item, testFn, callback);
+        });
+    } else if (item.type === 'section') {
+        _scanConfig(item.items, testFn, callback);
+    } else if (testFn(item)) {
+        callback(item);
+    }
+}
+
+function loadCustomPresets() {
+
+    var customColorPresets = retrieveObject('custom-presets', {});
+    var paletteSelector;
+    _scanConfig(clay.config, function(item) {
+        return item.messageKey === 'PALETTE'; 
+    }, function(item) {
+        paletteSelector = item;
+    });
+
+    console.log('apply custom presets: ' + JSON.stringify(customColorPresets, null, 2));
+
+    for (var customPresetKey in customColorPresets) {
+        var selectorOption = _.findWhere(paletteSelector.options, { writable: true, value: customPresetKey });
+        if (selectorOption) {
+            console.log('preset[' + customPresetKey + '] <- ' + JSON.stringify(customColorPresets[customPresetKey]));
+            selectorOption.colors = customColorPresets[customPresetKey]; 
+        } else {
+            console.log('no such preset[' + customPresetKey + ']');
+        }
+    }
+
+}
+
+function updateCustomPresets(modifiedPresets) {
+    var customPresets = retrieveObject('custom-presets', {});
+    _.extend(customPresets, modifiedPresets);
+    console.log('updated custom presets: ' + JSON.stringify(customPresets, null, 2));
+    storeObject('custom-presets', customPresets);
+}
+
 // --------------------------------------------------------------------------
 //
 // --------------------------------------------------------------------------
@@ -119,6 +165,7 @@ Pebble.addEventListener('ready', function () {
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
+    loadCustomPresets();
     Pebble.openURL(clay.generateUrl());
 });
 
@@ -146,6 +193,7 @@ Pebble.addEventListener("webviewclosed", function (e) {
     //console.log('dict: ' + JSON.stringify(dict, null, 2));
     //console.log('locopts: ' + JSON.stringify(locopts, null, 2));
     console.log('userData: ' + JSON.stringify(userData, null, 2));
+    updateCustomPresets(userData.modifiedPresets);
 
     storeObject('location', locopts);
     var locpos = locationOverride(locopts);

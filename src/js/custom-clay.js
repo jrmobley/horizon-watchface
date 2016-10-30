@@ -126,10 +126,10 @@ module.exports = function (minified) {
     clayConfig.on(clayConfig.EVENTS.BEFORE_SUBMIT, function() {
 
         var paletteSelector = clayConfig.getItemByMessageKey('PALETTE');
-        var modifiedPresets = [];
+        var modifiedPresets = {};
         paletteSelector.config.options.forEach(function(preset) {
             if (preset.modified) {
-                modifiedPresets.push(preset);
+                modifiedPresets[preset.value] = preset.colors;
             }
         });
         
