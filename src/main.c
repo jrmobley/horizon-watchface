@@ -509,7 +509,7 @@ void drawClock(Layer* layer, GContext* ctx) {
 
 #if SCREENSHOT
     g.gregorian.tm_hour = 13;
-    g.gregorian.tm_min = 30;
+    g.gregorian.tm_min = 50;
     g.battery = 10;
 #endif
 

@@ -1,0 +1,3 @@
+That bit around the outside is a 24 hour dial that shows the position of the sun and the horizon line. It uses location services and the power of maths to adjust the horizon and solar noon angle for your current location.
+
+Version 2 brings a cleaner and more readable display, along with support for the Pebble 2 and Pebble Time 2.
