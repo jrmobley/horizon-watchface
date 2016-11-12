@@ -19,7 +19,9 @@ var Clay = require('pebble-clay');
 var clayConfig = require('./config.js');
 var clayCustomFunc = require('./custom-clay.js');
 var Preview = require('pebble-clay-preview-component');
-var previewComponent = new Preview(require('raw!./preview.svg'), require('raw!./preview.css')); 
+var previewTemplate = require('raw!../../resources/data/preview.svg'); 
+var previewStyle = require('raw!../../resources/data/preview.css'); 
+var previewComponent = new Preview(previewTemplate, previewStyle); 
 
 var clay = new Clay(clayConfig, clayCustomFunc, { autoHandleEvents: false });
 clay.registerComponent(previewComponent);

@@ -20,15 +20,27 @@
     "resources": {
       "media": [
         {
-          "menuIcon": true,
-          "type": "png",
+          "file": "images/icon.png",
           "name": "MENU_ICON",
-          "file": "icon.png"
+          "type": "png",
+          "menuIcon": true
         },
         {
-          "type": "raw",
+          "file": "data/din-condensed.ffont",
           "name": "DIN_CONDENSED_FFONT",
-          "file": "din-condensed.ffont"
+          "type": "raw"
+        },
+        {
+          "file": "data/preview.css",
+          "name": "IGNORE_PREVIEW_CSS",
+          "targetPlatforms": null,
+          "type": "raw"
+        },
+        {
+          "file": "data/preview.svg",
+          "name": "IGNORE_PREVIEW_SVG",
+          "targetPlatforms": null,
+          "type": "raw"
         }
       ]
     },
