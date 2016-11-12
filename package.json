@@ -6,12 +6,10 @@
   "dependencies": {
     "pebble-clay": "jrmobley/clay#dist",
     "pebble-clay-preview-component": "^0.0.1",
-    "pebble-fctx": "^1.6.1",
     "pebble-utf8": "^1.0.1",
-    "underscore": "^1.8.3"
-  },
-  "devDependencies": {
+    "pebble-fctx": "^1.6.1",
     "pebble-fctx-compiler": "^1.2.1",
+    "underscore": "^1.8.3",
     "raw-loader": "^0.5.1"
   },
   "keywords": [
